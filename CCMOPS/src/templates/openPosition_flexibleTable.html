@@ -344,6 +344,15 @@
 	{
 		window.location.replace("/op2");
 	}
+	function updatePrices(){
+		$.getJSON('/updateRealtimeEquityPrices',
+			function(data) {
+				console.log(data)
+				updateEquityRealtimeMarketValue(data)
+         	}
+         );
+	
+	}
 
 	$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
 	$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
@@ -400,7 +409,6 @@
 
 	<input type="button" id="ytd-return" value = 'YTD'style="left:0;z-index:100;margin:10px 0 0 0;background-color:#037dae;color:white;font-weight:700;border:none;cursor:pointer;"/>
 	<input type="button" id='inception-return' value = 'Since Inception'style="z-index:100;margin:10px 0 0 0;background-color:#A8A8A8;color:white;font-weight:700;border:none;cursor:pointer;"/>
-	
 	<input type="button" id='annual-return' value = 'Annual'style="z-index:100;margin:10px 0 0 0;background-color:#A8A8A8;color:white;font-weight:700;border:none;cursor:pointer;"/>
 	<!---->
 	<div id="graph_container1" style="width:50%; height: 500px; margin-top: 40; margin-bottom:20; float:right; display: inline-block"></div>
@@ -434,6 +442,8 @@
 	
 	<input type="button" id ='real-time' name="REAL-TIME" value="REAL TIME" style="background-color:#A8A8A8;color:white;font-weight:700;border:none;" onclick="streaming()" />
 	<input type="button" id='fx-exposure' name="fx-exposure" value="FX EXPOSURE" data-mode="off" style="background-color:#A8A8A8;color:white;font-weight:700;border:none;" />
+	<input type="button" name="refresh-prices" value="REFRESH" style="background-color:#008a00;color:white;font-weight:700;border:none;" onclick="updatePrices()" />
+	
 	<div style='height:30px;margin-left:10px;display:inline-block;'>
 	<label class="label bond-label">
 		<input class="radio" type="checkbox" value="bond" id='bond-checkbox' checked>
@@ -1363,6 +1373,44 @@
 				$('.position-CDS').show()
 			}
 		})
+		function updateEquityRealtimeMarketValue(res){
+        	$(".position-EQTY .price").each(function(){
+        		var tempissuer = $(this).siblings('.issuer').text()
+        		if(res.tickers.includes(tempissuer)){
+        			var tempPrice = parseFloat($(this).text())
+					var price = res.prices[res.tickers.indexOf(tempissuer)]
+					var currency = $(this).siblings('.curncy').text()
+					var fxrate = 1
+					$(this).text(price.toFixed(2))
+					var tempMarketValue = parseFloat($(this).siblings('.mv').text())
+					var marketValue = price*unformatNumber($(this).siblings('.quantity').text())*fxrate
+					
+					$(this).siblings('.mv').text(formatNumber(marketValue.toFixed(0)))
+					
+					if($(this).siblings('.dtd').attr("mode") =="percent" ){
+						var dtd = (price/tempPrice-1)*100
+						$(this).siblings('.dtd').text(formatNumber(dtd.toFixed(2))+"%")
+					}else{
+						$(this).siblings('.dtd').text(formatNumber(marketValue-tempMarketValue))
+					}
+					if($(this).siblings('.mtd').attr("mode") =="percent" ){
+						var tempmtd = parseFloat($(this).siblings('.mtd').text())
+						var tempPrevMonthPrice = tempPrice/(1+tempmtd/100)
+						console.log(tempPrevMonthPrice)
+						var mtd = (price/tempPrevMonthPrice-1)*100
+						$(this).siblings('.mtd').text(formatNumber(mtd.toFixed(2))+"%")
+					}else{
+						var tempmtd = parseFloat($(this).siblings('.mtd').text())
+						$(this).siblings('.mtd').text(formatNumber(marketValue-tempMarketValue+tempmtd))
+					}
+					
+					var costbasis = unformatNumber($(this).siblings('.cb').text())
+					var urlzgl = marketValue - costbasis
+					$(this).siblings('.pnl').text(formatNumber(urlzgl.toFixed(0)))
+        		}
+        		updateColorCoding()
+            });
+        }
         function updateColorCoding(){
 			$(".color-coding").each(function(){
 				var temp = unformatNumber($(this).text())

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import Flask, render_template, flash, redirect, g, abort, session, url_for, request
+from flask import Flask, render_template, flash, redirect, g, abort, session, url_for, request,jsonify
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -21,6 +21,7 @@ from django.contrib.admin.templatetags.admin_list import ResultList
 import numpy as np
 from datetime import timedelta
 import operator
+#from iexfinance.stocks import Stock
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -549,15 +550,6 @@ def incomeAttribution():
 #@login_required
 def transView():
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
     form = FlaskForm()
     account = request.args.get('account')
     startDate = request.args.get('startDate')
@@ -868,6 +860,40 @@ def background_thread():
         socketio.emit('server_response',{'price':priceDict,'fx':fxDict,'dtdPrice':realTimeDtdPriceDict,\
                                          'mtdPrice':realTimeMtdPriceDict,'scrollPrice':scrollDict}, namespace = '/realTime')
         socketio.sleep(300)
+
+@app.route('/updateRealtimeEquityPrices', methods=['GET', 'POST'])
+def updateRealtimeEquityPrices():
+    exceptionList = ['FNMA Pfd','GKTRF','OLTH','LAMDA','SRV']
+    replaceDict={'OIBR/C':'orbr.c','place_holder':'placeHolder'}
+    tickerList=[]
+    priceList=[]
+    resultDict={}
+    positionList = eval(client.get('positionListCategory'))
+    for dict in positionList:
+        if dict['class']=='EQTY':
+            for x in dict['details']:
+                if x['Issuer'] not in exceptionList:
+                    if x['Issuer'] in replaceDict.keys():
+                        tickerList.append(replaceDict[x['Issuer']])
+                    else:
+                        tickerList.append(x['Issuer'])
+    
+    
+    tickerList=['ALRN']
+    resultDict = {'tickers':tickerList}
+    for ticker in tickerList:
+        #priceList.append(iexFinanceAPIStockPrice(ticker))
+        priceList.append(0.8226)
+    resultDict ['prices']=priceList
+    return jsonify(resultDict)
+
+def iexFinanceAPIStockPrice(ticker):
+    try:
+        stock = Stock(ticker, token="sk_d6410f49068d422fb3ffb8d25e14c7fc")
+    except:
+        stock = Stock(ticker, token="sk_aac489a80f854745b00a5432be3eb16d")
+        
+    return stock.get_price()
 
 @app.route('/op2')
 #@login_required
