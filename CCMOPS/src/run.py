@@ -21,7 +21,7 @@ from django.contrib.admin.templatetags.admin_list import ResultList
 import numpy as np
 from datetime import timedelta
 import operator
-#from iexfinance.stocks import Stock
+from iexfinance.stocks import Stock
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -864,7 +864,7 @@ def background_thread():
 @app.route('/updateRealtimeEquityPrices', methods=['GET', 'POST'])
 def updateRealtimeEquityPrices():
     exceptionList = ['FNMA Pfd','GKTRF','OLTH','LAMDA','SRV']
-    replaceDict={'OIBR/C':'orbr.c','place_holder':'placeHolder'}
+    replaceDict={'OIBR/C':'OIBR.C','place_holder':'placeHolder'}
     tickerList=[]
     priceList=[]
     resultDict={}
@@ -877,13 +877,9 @@ def updateRealtimeEquityPrices():
                         tickerList.append(replaceDict[x['Issuer']])
                     else:
                         tickerList.append(x['Issuer'])
-    
-    
-    tickerList=['ALRN']
     resultDict = {'tickers':tickerList}
     for ticker in tickerList:
-        #priceList.append(iexFinanceAPIStockPrice(ticker))
-        priceList.append(0.8226)
+        priceList.append(iexFinanceAPIStockPrice(ticker))
     resultDict ['prices']=priceList
     return jsonify(resultDict)
 
