@@ -35,8 +35,8 @@ socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 thread_lock = Lock()
 # config for cache
-# client = Client(('54.162.132.155', 11211))
-client = Client(('127.0.0.1', 11211))
+client = Client(('54.162.132.155', 11211))
+# client = Client(('127.0.0.1', 11211))
 # init sqlAlchemy
 dbAlchemy = SQLAlchemy(app)
 # init login module 
