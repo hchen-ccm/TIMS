@@ -22,6 +22,8 @@ import numpy as np
 from datetime import timedelta
 import operator
 
+print('test for pull request in the server')
+
 app = Flask(__name__)
 app.config.from_object('config')
 
