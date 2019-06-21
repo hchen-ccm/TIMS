@@ -1,0 +1,404 @@
+<!-- extend base layout -->
+{% extends "base.html" %}
+{% block content %}
+
+<script type="text/javascript">
+	function refresh()
+	{
+		var i = document.getElementById("account").value;
+	    window.location.replace("/transView?account=" + i);
+	}
+	function search()
+	{
+		var i = document.getElementById("startDate").value;
+		var j = document.getElementById("endDate").value;
+		window.location.replace("/transView?startDate=" + i + "&endDate=" + j);
+	}
+	$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
+	$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
+	$("#secondary-navigation").show()
+	$("#navigation-container").css("margin-bottom","50px")
+	$("#pnav-account").addClass("primary-active")
+	$("#snav-transactions").addClass("secondary-active")
+	$(".secondary-nav-account").show()
+	$(".secondary-nav-investor").hide()
+	$(".secondary-nav-analytic").hide()
+
+	
+</script>
+<script src="../static/tableToExcel.js"></script>
+
+<style>
+    h4 {
+            font-weight: bold;
+        }
+	table{
+            border-collapse: collapse;
+            border: 4px solid #005CB3;
+        }
+    tr th{
+           border-bottom: 2px solid #005CB3;
+           padding: 0 15px;
+           height: 40px;
+        }
+    tr td{
+        height: 41px;
+        padding: 0 10px;
+        height: 30px;
+    }
+    tr:hover {
+    	background-color:#f5f5f5;
+        cursor:pointer;
+    }
+    #account{
+    	float:left;
+    	margin-bottom:20px;
+    }
+    
+    #date-filter{
+    	float:right;
+    	display:inline-block;
+    	height:30px;
+    	margin-bottom:20px;
+    }
+    .label{
+    	margin:6px 0px 0px 15px;
+    }
+	.radio{
+		display:none
+	}
+	.radioInput{
+		background-color:#fff;border:1px solid rgba(0,0,0,0.15);
+		border-radius:100%;
+		display:inline-block;height:16px;
+		margin-right:10px;
+		margin-top:-1px;
+		vertical-align:middle;
+		width:16px;
+		line-height:1
+	}
+	.radio:checked + .radioInput:after{
+		background-color:#57ad68;border-radius:100%;content:"";display:inline-block;height:12px;margin:2px;width:12px
+	}
+	.checkbox.radioInput,.radio:checked + .checkbox.radioInput:after{
+		border-radius:0
+	}
+    
+</style>
+
+	<select id="account" name="account" onchange="refresh()">
+		<!--
+		{% if account == "AGCF" %}
+			<option value = "AGCF" selected>ANDROMEDA</option>
+		{% else %}
+			<option value = "AGCF">ANDROMEDA</option>
+		{% endif %}
+		{% if account == "ACPT" %}
+			<option value = "ACPT" selected>ASPEN CREEK</option>
+		{% else %}
+			<option value = "ACPT">ASPEN CREEK</option>
+		{% endif %}
+		{% if account == "INC5" %}
+			<option value = "INC5" selected>BALDR DRACO</option>
+		{% else %}
+			<option value = "INC5">BALDR DRACO</option>
+		{% endif %}
+		{% if account == "INC0" %}
+			<option value = "INC0" selected>BALDR DRACO SERIES B</option>
+		{% else %}
+			<option value = "INC0">BALDR DRACO SERIES B</option>
+		{% endif %}
+		{% if account == "HART" %}
+			<option value = "HART" selected>HARTZ</option>
+		{% else %}
+			<option value = "HART">HARTZ</option>
+		{% endif %}
+		-->
+		{% if account == "PGOF" %}
+			<option value = "PGOF" selected>ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% else %}
+			<option value = "PGOF">ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% endif %}
+	</select>
+	<a id="dlink" style="display:none;"></a>
+	<input type="image" src="../static/excel-label.png" onclick="tableToExcel('transaction-view', 'Transactions', 'transactions.xls')" value="DOWNLOAD" style='float:right'/>
+	<div id="date-filter">
+		{% if startDate!='' %}
+		<input type="date" name="startDate" id="startDate" value="{{startDate}}" />
+		{% else %}
+		<input type="date" name="startDate" id="startDate">
+			<SCRIPT LANGUAGE="JavaScript"> 
+				startDate.value = "2017-01-01"; 
+			</SCRIPT> 
+		</input>
+		{% endif %}
+		-
+		{% if endDate!='' %}
+		<input type="date" name="endDate" id="endDate" value="{{endDate}}" />
+		{% else %}
+		<input type="date" name="endDate" id="endDate">
+			<SCRIPT LANGUAGE="JavaScript"> 
+				var now = new Date(); 
+				var month = now.getMonth() + 1;
+				var day = now.getDate();
+				if(month < 10) month = "0" + month;
+				if(day < 10) day = "0" + day;
+				endDate.value = (now.getYear() + 1900) + "-" + month + "-" + day; 
+			</SCRIPT>
+		</input>
+		{% endif %}
+		<input type="button" name="SEARCH" value="SEARCH" style="background-color:#008a00;color:white;font-weight:700;border:none;" onclick="search()" />
+	</div>
+	<!---->
+	
+	<div style='height:30px;margin-left:10px'>
+	<label class="label bond-label">
+		<input class="radio" type="checkbox" value="bond" id='bond-checkbox' checked>
+        <span class="checkbox radioInput"></span>Bond
+    </label>
+    <label class="label equity-label">
+        <input class="radio" type="checkbox" value="equity" id='equity-checkbox' checked>
+        <span class="checkbox radioInput"></span>Equity
+    </label>
+    <label class="label repo-label">
+        <input class="radio" type="checkbox" value="repo" id='repo-checkbox' checked>
+        <span class="checkbox radioInput"></span>Repo
+    </label>
+     <label class="label future-label">
+        <input class="radio" type="checkbox" value="future" id='future-checkbox' checked>
+        <span class="checkbox radioInput"></span>Future
+    </label>
+    <label class="label option-label">
+        <input class="radio" type="checkbox" value="option" id='option-checkbox' checked>
+        <span class="checkbox radioInput"></span>Option
+    </label>
+    <label class="label cds-label">
+        <input class="radio" type="checkbox" value="cds" id='cds-checkbox' checked>
+        <span class="checkbox radioInput"></span>CDS
+    </label>
+    <label class="label fx-label">
+        <input class="radio" type="checkbox" value="fx" id='fx-checkbox' checked>
+        <span class="checkbox radioInput"></span>FX
+    </label>
+    </div>
+    
+	<table  id="transaction-view">
+	<thead>
+	  <tr>
+	    <th class="sort" data-sort="tradedate" style="text-align:center;">Trade Date</th>
+	    <th class="sort" data-sort="type" style="text-align:center;">Security Type</th>
+	    <th class="sort" data-sort="secname" style="text-align:center;">Security Name</th>
+	    <th class="sort" data-sort="side" style="text-align:center;">Side</th>
+	    <th class="sort" data-sort="quantity" style="text-align:center;">Quantity</th>
+	    <th class="sort" data-sort="price" style="text-align:center;">Price</th>
+	    <th class="sort" data-sort="net" style="text-align:center;">Net</th>
+	    <th class="sort" data-sort="currency" style="text-align:center;">Currency</th>
+	    <th class="sort" data-sort="counterparty" style="text-align:center;">CounterParty</th>
+	    <th class="sort" data-sort="isin" style="text-align:center;">ISIN</th>
+	  </tr>
+	 </thead>
+	 <tbody class="transactions-list">
+	 {% for i in name %}
+	  	{% if i.tranType=='EURO' %}
+	  	<tr class='transaction-tr transaction-bond'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">BOND</td>
+	  	{% elif i.tranType=='EQTY' %}
+	  	<tr class='transaction-tr transaction-equity'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">EQUITY</td>
+	  	{% elif i.tranType=='FUT' %}
+	  	<tr class='transaction-tr transaction-future'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">FUTURE</td>
+	  	{% elif i.tranType=='REPO' or i.tranType=='CREPO'%}
+	  	<tr class='transaction-tr transaction-repo'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">{{i.tranType}}</td>
+	  	{% elif i.tranType=='CALL' or i.tranType=='PUT'%}
+	  	<tr class='transaction-tr transaction-option'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">{{i.tranType}}</td>
+	  	{% elif i.tranType=='CDS' %}
+	  	<tr class='transaction-tr transaction-cds'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">{{i.tranType}}</td>
+	  	{% elif i.tranType=='FX' %}
+	  	<tr class='transaction-tr transaction-fx'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">{{i.tranType}}</td>
+	  	{% else %}
+	  	<tr class='transaction-tr transaction-others'>
+	  		<td class="tradedate" style="text-align:center;">{{i.tradeDate}}</td>
+	  		<td class="type" style="text-align:center;">{{i.tranType}}</td>
+	  	{% endif %}
+	    <td class="secname" style="text-align:left;">{{i.securityName}}</td>
+	    {% if i.tranType != 'REPO' and i.tranType != 'CREPO' %}
+		    {% if i.status == 'Initial' and i.side =='B' %}
+		    	<td class="side" style="text-align:center;">Buy</td>
+		    {% elif i.status == 'Close' and i.side =='B' %}
+		    	<td class="side" style="text-align:center;">Cover</td>
+		    {% elif i.status == 'Initial' and i.side =='S' %}
+		    	<td class="side" style="text-align:center;">Short Sell</td>
+		    {% else %}
+		    	<td class="side" style="text-align:center;">Sell</td>
+		    {% endif %}
+	    {% endif %}
+	    {% if i.tranType == 'REPO' %}
+	    	{% if i.side =='B' %}
+		    	<td class="side" style="text-align:center;">Borrow</td>
+		    {% elif i.side =='S' %}
+		    	<td class="side" style="text-align:center;">Lending</td>
+		    {% endif %}
+	    {% endif %}
+	    {% if i.tranType == 'CREPO' %}
+	    	{% if i.side =='B' %}
+		    	<td class="side" style="text-align:center;">Repurchase</td>
+		    {% elif i.side =='S' %}
+		    	<td class="side" style="text-align:center;">Return</td>
+		    {% endif %}
+	    {% endif %}
+	    <td class="quantity" style="text-align:right;">{{i.quantity}}</td>
+	    {% if i.tranType=='CDS' %}
+	    	<td class="price" style="text-align:right;">{{i.reserve2}}</td>
+	    {% else %}
+	    	<td class="price" style="text-align:right;">{{i.price}}</td>
+	    {% endif %}
+	    <td class="net" style="text-align:right;">{{i.net}}</td>
+	    <td class="currency" style="text-align:center;">{{i.currType}}</td>
+	    <td class="counterparty" style="text-align:center;">{{i.brokerName}}</td>
+	    <td class="isin" style="text-align:center;">{{i.ISIN}}</td>
+  	</tr>
+	{% endfor %}
+	</tbody>
+	</table>
+	<script>
+		$('.label').css('display','none')
+		var sortMethond = "ascend"
+		$(document).ready(function (){
+			if($('.transaction-bond')[0]){
+				$('.bond-label').css('display','inline-block')
+			}
+			if($('.transaction-equity')[0]){
+				$('.equity-label').css('display','inline-block')
+			}
+			if($('.transaction-repo')[0]){
+				$('.repo-label').css('display','inline-block')
+			}
+			if($('.transaction-future')[0]){
+				$('.future-label').css('display','inline-block')
+			}
+			if($('.transaction-option')[0]){
+				$('.option-label').css('display','inline-block')
+			}
+			if($('.transaction-cds')[0]){
+				$('.cds-label').css('display','inline-block')
+			}
+			if($('.transaction-fx')[0]){
+				$('.fx-label').css('display','inline-block')
+			}
+			
+			$(".sort").click(function () {
+        		if (sortMethond == "ascend") {
+        			sortMethond = "descend"
+        		}else{
+        			if (sortMethond == "descend") {
+        				sortMethond = "ascend"
+        			}
+        		}
+        		
+                var tempSortBase = $(this).attr("data-sort")
+                var tb = $("#transaction-view").children('.transactions-list');               
+                tb.each(function () {
+                    var trow = $(this).children('tr')
+                    var SortBase = "." +tempSortBase
+                    if (sortMethond == "ascend") {                        
+                        trow.sort(function (A, B) {
+                            if ( tempSortBase == "type"|| tempSortBase == "secname" || tempSortBase == "side" || tempSortBase == "currency" || tempSortBase == "counterparty"|| tempSortBase == "isin" ) {
+                                var XX = $(A).children(SortBase).text()
+                                var YY =$(B).children(SortBase).text()
+                                if(XX==""||XX==null){XX="AA"}
+                                if(YY==""||YY==null){YY="AA"}
+                            } else {
+                                if (tempSortBase == "tradedate") {
+                                    var tempXX = $(A).children(SortBase).text().split('/')
+                                    var tempYY = $(B).children(SortBase).text().split('/')
+                                    var XX = parseInt(tempXX[2])*10000+parseInt(tempXX[0])*100+parseInt(tempXX[1])
+                                    var YY = parseInt(tempYY[2])*10000+parseInt(tempYY[0])*100+parseInt(tempYY[1])
+                                    if(isNaN(XX)){XX=10999999}
+									if(isNaN(YY)){YY=10999999}
+                                } else {
+                                    var XX = unformatNumber($(A).children(SortBase).text())
+                                    var YY = unformatNumber($(B).children(SortBase).text())
+                                }
+                            }
+                            return ((YY < XX) ? -1 : ((YY > XX) ? 1 : 0));
+                        }).appendTo($(this))                       
+                    } else {
+                        if (sortMethond == "descend") {
+                            trow.sort(function (A, B) {
+                                if (tempSortBase == "type"|| tempSortBase == "secname" || tempSortBase == "side" || tempSortBase == "currency" || tempSortBase == "counterparty" ) {
+                                    var XX = $(A).children(SortBase).text()
+                                    var YY = $(B).children(SortBase).text()
+                                    if(XX==""||XX==null){XX="ZZ"}
+                                	if(YY==""||YY==null){YY="ZZ"}
+                                } else {
+                                    if (tempSortBase == "tradedate") {
+                                    	var tempXX = $(A).children(SortBase).text().split('/')
+                                    	var tempYY = $(B).children(SortBase).text().split('/')
+                                        var XX = parseInt(tempXX[2])*10000+parseInt(tempXX[0])*100+parseInt(tempXX[1])
+                                        var YY = parseInt(tempYY[2])*10000+parseInt(tempYY[0])*100+parseInt(tempYY[1])
+                                        if(isNaN(XX)){XX=20999999}
+										if(isNaN(YY)){YY=20999999}
+                                        
+                                    } else {
+                                        var XX = unformatNumber($(A).children(SortBase).text())
+                                        var YY = unformatNumber($(B).children(SortBase).text())
+                                    }
+                                }
+                                return ((YY > XX) ? -1 : ((YY < XX) ? 1 : 0));
+                            }).appendTo($(this))
+                        }
+                    }
+                });
+            })
+		})
+		$('.radio').click(function(){
+			$('.transaction-tr').hide()
+			if($('#bond-checkbox').is(':checked')){
+				$('.transaction-bond').show()
+			}
+			if($('#equity-checkbox').is(':checked')){
+				$('.transaction-equity').show()
+			}
+			if($('#repo-checkbox').is(':checked')){
+				$('.transaction-repo').show()
+			}
+			if($('#option-checkbox').is(':checked')){
+				$('.transaction-option').show()
+			}
+			if($('#future-checkbox').is(':checked')){
+				$('.transaction-future').show()
+			}
+			if($('#cds-checkbox').is(':checked')){
+				$('.transaction-cds').show()
+			}
+			if($('#fx-checkbox').is(':checked')){
+				$('.transaction-fx').show()
+			}
+		})
+		function formatNumber(num) { //add thousand seperator
+            return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
+        }
+        function unformatNumber(str) { //replace thousand seperator
+            if (/%$/.test(str)) { str.replace("%","")}
+            var temp = str
+            temp = str.replace(/,/g, "")
+            num = parseFloat(temp)
+            return num
+        }
+		
+		
+		
+	</script>
+{% endblock %}

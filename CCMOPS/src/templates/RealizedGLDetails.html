@@ -1,0 +1,1041 @@
+{% extends "base.html" %}
+{% block content %}
+
+<meta charset="utf-8" />
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+<script src="../static/tableToExcel.js"></script>
+
+<style>
+    body {
+        font: 13px Helvetica;
+    }
+    h4 {
+        font-weight: bold;
+    }
+    table {
+        border-collapse: collapse;
+        border: 4px solid #005CB3;
+    }
+    #relaized-gainloss-header {
+        border-top: 4px solid #005CB3;
+        background-color: #BFBFBF;
+        height: 30px;
+    }
+    /* fix header*/
+    #relaized-gainloss-report {
+        overflow-y: auto;
+    }
+    #relaized-gainloss-list-header {
+        text-align:center;
+        border-top: 4px solid #005CB3;
+        height: 30px;
+    }
+    #relaized-gainloss-list-header td {
+        border-bottom: 1px solid #BFBFBF;
+        padding: 0 10px;
+        font-weight: 700;
+        height: 40px;
+        text-align:center;
+    }
+    .security-position-list tr td {
+        height: 41px;
+        padding: 0 10px;
+        height: 30px;
+    }
+    .security-position-list tr:hover {
+        background-color: #f5f5f5;
+    }
+    .groupheader-row {
+        border-top: 2px solid #005CB3;
+    }
+    .expandcollapse {
+        display: inline-block;
+        margin-left: 5px;
+        margin-right: 5px;
+        width: 15px;
+        text-align: center;
+        background-color: #0066CC;
+        color: white;
+        text-decoration: none;
+    }
+    .groupheader-row tr {
+        padding: 0 15px;
+        height: 40px;
+    }
+    .groupheader-row tr td h4 {
+        font-weight: bold;
+        display: inline;
+        font: 13px Helvetica;
+    }
+    .footer-row {
+        border-bottom: 2px solid #005CB3;
+    }
+    .equity footer-row td h4 {
+        font-size: 14px;
+        font-weight: bold;
+        display: inline;
+    }
+    .cb {
+        cursor: pointer;
+    }
+    .sort:hover {
+        cursor: pointer;
+    }
+    .secondary_input_selection{
+    	width:150px;
+		background-color:white;
+		color:black;
+    }
+    #relaized-gainloss-list-footer {
+        height: 30px;
+        border-bottom: 4px solid #005CB3;
+        font-weight: 400;
+    }
+    #relaized-gainloss-list-footer td {
+        padding: 0 10px;
+        font-weight: 700;
+        height: 40px;
+    }
+    .realizeGL_input_selection{
+    	width:150px;
+    	margin-left:10px
+    }
+    .positive-color-coding {
+		color:#15b607;
+		font-weight:500;
+	}
+	.negative-color-coding {
+		color:#e30606;
+		font-weight:500;
+    }
+    .gl-report-session-title{
+    	font-weight:700;
+    }
+    .total-row{
+    	font-weight:700;
+    	text-align: right;
+    	padding: 0 10px
+    }
+    .popup {
+        	display:none;
+            position: absolute;
+            z-index:100;
+            background-color:white;
+            width: 450px;
+            border: 1px solid #8a4419;
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, .5);
+     }
+     .popup .title {
+         font-size:14px;
+         font-weight:600;
+         padding:10px 10px;
+    }
+    .popup-info {
+        width:90%;
+        display: block;
+        margin: auto;
+        border:none;
+        padding-bottom: 15px;
+    }
+    .popup-info thead tr{
+        font-weight:400;
+        border-bottom:2px dashed #005CB3 
+    }
+    .popup-info tr{
+        text-align:right;
+    }
+    .popup-info tr td{
+        padding: 0 10px;
+        height: 30px;
+    }
+    .popup-info tbody td{
+        color:#3e3e3e;
+    }
+    .popup-footnotes {
+        color:#7e7e7e;
+        font-size:10px;
+        padding:10px 10px;
+    }
+    .urlz-isin{
+        cursor:pointer;
+        text-decoration:underline;
+    }
+    .rlz-isin{
+        cursor:pointer;
+        text-decoration:underline;
+    }
+</style>
+<script type="text/javascript">
+
+	$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
+	$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
+	$("#pnav-account").addClass("primary-active")
+	$(".secondary-nav-account").show()
+	$(".secondary-nav-investor").hide()
+	$(".secondary-nav-analytic").hide()
+	$("#snav-realizedgl").addClass("secondary-active")
+	$("#navigation-container").css("margin-bottom","50px")
+	
+	function search()
+	{
+		var i = document.getElementById("year_realizedGL").value;
+		var j = document.getElementById("month_realizedGL").value;
+		window.location.replace("/gl?year=" + i + "&month=" + j);
+	}
+	
+</script>
+
+	<select id="account" name="account" onchange="refresh()">
+		{% if account == "PGOF" %}
+			<option value = "PGOF" selected>ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% else %}
+			<option value = "PGOF">ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% endif %}
+	</select>
+	<input type="image" id="table-control" value ='EXPAND' src="../static/down.png" />
+	<div style="float:right;display:inline-block;margin-bottom:20px">
+	<select id="year_realizedGL" class="secondary_input_selection">
+		{% if year == "2017" %}
+			<option value="2017" selected>2017</option>
+		{% else %}
+			<option value="2017">2017</option>
+		{% endif %}
+		{% if year == "2018" %}
+			<option value="2018" selected>2018</option>
+		{% else %}
+			<option value="2018">2018</option>
+		{% endif %}
+		{% if year == "2019" %}
+			<option value="2019" selected>2019</option>
+		{% else %}
+			<option value="2019">2019</option>
+		{% endif %}
+	</select>
+	<select id="month_realizedGL" class="secondary_input_selection">
+		{% if month == "0" %}
+			<option value="0" selected>Whole Year</option>
+		{% else %}
+			<option value="0">Whole Year</option>
+		{% endif %}
+		{% if month == "1" %}
+			<option value="1" selected>January</option>
+		{% else %}
+			<option value="1">January</option>
+		{% endif %}
+		{% if month == "2" %}
+			<option value="2" selected>February</option>
+		{% else %}
+			<option value="2">February</option>
+		{% endif %}
+		{% if month == "3" %}
+			<option value="3" selected>March</option>
+		{% else %}
+			<option value="3">March</option>
+		{% endif %}
+		{% if month == "4" %}
+			<option value="4" selected>April</option>
+		{% else %}
+			<option value="4">April</option>
+		{% endif %}
+		{% if month == "5" %}
+			<option value="5" selected>May</option>
+		{% else %}
+			<option value="5">May</option>
+		{% endif %}
+		{% if month == "6" %}
+			<option value="6" selected>June</option>
+		{% else %}
+			<option value="6">June</option>
+		{% endif %}
+		{% if month == "7" %}
+			<option value="7" selected>July</option>
+		{% else %}
+			<option value="7">July</option>
+		{% endif %}
+		{% if month == "8" %}
+			<option value="8" selected>August</option>
+		{% else %}
+			<option value="8">August</option>
+		{% endif %}
+		{% if month == "9" %}
+			<option value="9" selected>September</option>
+		{% else %}
+			<option value="9">September</option>
+		{% endif %}
+		{% if month == "10" %}
+			<option value="10" selected>October</option>
+		{% else %}
+			<option value="10">October</option>
+		{% endif %}
+		{% if month == "11" %}
+			<option value="11" selected>November</option>
+		{% else %}
+			<option value="11">November</option>
+		{% endif %}
+		{% if month == "12" %}
+			<option value="12" selected>December</option>
+		{% else %}
+			<option value="12">December</option>
+		{% endif %}
+	</select>
+	<input type="button" name="SEARCH" value="SEARCH" style="background-color:#008a00;color:white;font-weight:700;border:1px;padding:4px;margin-left:10px" onclick="search()"/>
+	</div>
+	
+	<table id="relaized-gainloss-report">
+	    <thead id="relaized-gainloss-list-header">
+	        <tr>
+	            <td class="sort" data-sort="security">Security</td>
+	            <td class="sort" data-sort="riskcategory">Country</td>
+	            <td class="sort" data-sort="currency">Currency</td>
+	            <td class="sort" data-sort="cost">Cost</td>
+	            <td class="sort" data-sort="proceeds">Proceeds</td>
+	            <td class="sort" data-sort="stgl">ST Gain/Loss</td>
+	            <td class="sort" data-sort="ltgl">LT Gain/Loss</td>
+	            <td class="sort" data-sort="intexp">Int Expense</td>
+	            <td class="sort" data-sort="intrev">Int Revenue</td>
+	            <td class="sort" data-sort="totalusd">Total in USD</td>
+	            <td>ISIN</td>
+	        </tr>
+	    </thead>
+	    <tbody>
+	    	<tr>
+	            <td class ="gl-report-session-title">Realized G/L</td>
+	            <td></td>
+	            <td></td>
+	            <td></td>
+	            <td></td>
+	            <td></td>
+	            <td></td>                 
+	            <td></td>
+	            <td></td>
+	            <td></td>
+	            <td></td>
+	        </tr>
+	    </tbody>
+	</table>
+	<div id="urlz-popup" class ="popup">
+        <div class="title">ABC 1.2% 34/56/7890</div>
+        <div class="details">
+            <table id="urlz-info" class="popup-info">
+                <thead id="urlz-info-header">
+                    <tr>
+                        <td>Trade Date</td>
+                        <td>Quantity</td>
+                        <td>Price</td>
+                        <td>FX Rate</td>
+                        <td>UnRz G/L</td>
+                    </tr>
+                </thead>                
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    <div id="rlz-popup" class ="popup" style="width: 560px">
+        <div class="title">ABC 1.2% 34/56/7890</div>
+        <div class="details">
+            <table id="rlz-info" class="popup-info">
+                <thead id="rlz-info-header">
+                    <tr>
+                        <td>Initial Dt</td>
+                        <td>Close Dt</td>
+                        <td>Initial Px</td>
+                        <td>Close Px</td>
+                        <td>Quantity</td>
+                        <td>Rz G/L</td>
+                    </tr>
+                </thead>                
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+	<table id ="sorting-rlz-header-row-temp" style="display:none"></table>
+	<table id ="sorting-rlz-details-temp" style="display:none"></table>
+	<table id ="sorting-rlz-footer-row-temp" style="display:none"></table>
+	<table id ="sorting-other-tbody-temp" style="display:none"></table>
+	<table id ="sorting-urlz-header-row-temp" style="display:none"></table>
+	<table id ="sorting-urlz-details-temp" style="display:none"></table>
+	<table id ="sorting-urlz-footer-row-temp" style="display:none"></table>
+
+
+<script>
+    var realizedList = {{realizedGLList|safe}}
+    var unrealizedList = {{unrzGlList|safe}}
+    console.log(realizedList)
+
+    $(document).ready(function () {
+        var sum_account_rlzd_stgl = 0, sum_account_rlzd_ltgl = 0, sum_account_rlzd_totalusd = 0;
+        var sum_account_unrlzd_stgl = 0, sum_account_unrlzd_ltgl = 0, sum_account_unrlzd_totalusd = 0;
+        // update realized details
+        for (i = 0; i < realizedList.length; i++) {
+            var temp_class = realizedList[i].class
+            var temp_Category = realizedList[i].categoryName
+            var temp_tbody_headerline = "<tbody class=\"" + temp_class + " groupheader-row rlz-groupheader-row\" id=\"" + temp_class + "-rlzd-header-row\">"
+            var temp_tr = " <tr class=\"group-collapsed collapse-header\" id=" + temp_class + "-rlzd-collapse-header><td class=\"grouping wrappable\" colspan=\"1\">"
+            var temp_control_button = "<a href=\"javascript:void(0)\"; class= \"expandcollapse collapse-anchor\" id=\"" + temp_class + "-rlzd-expand-icon\" data-groupid=\"" + temp_class + "-rlzd\" data-fundName=\"Perseus\"><span class=\"sr-only\">+</span></a><h4 class=\"type-name\">" + temp_Category + "</h4></td>"
+            var temp_title_collapse = "<td></td><td></td><td></td><td></td><td class=\"" + temp_class + "-rlzd-stgl-subtotal rlz-stgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A stgl</td><td class=\"" + temp_class + "-rlzd-ltgl-subtotal rlz-ltgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A ltgl</td><td></td><td></td><td  class=\"" + temp_class + "-rlzd-totalusd-subtotal rlz-totalusd-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A totalrlzusd</td><td></td></tr>"
+            var temp_tr2 = "<tr class=\"group-expanded expand-header\" id=\"" + temp_class + "-rlzd-expand-header\" style=\"display:none\"><td class=\"grouping wrappable\" colspan=\"1\">"
+            var temp_control_button2 = "<a href=\"javascript:void(0);\" class=\"expandcollapse expand-anchor\" id=\"" + temp_class + "-rlzd-collapse-icon\" data-groupid=\"" + temp_class + "-rlzd\" data-fundName=\"Perseus\">"
+            var temp_title_expand = "<span class=\"sr-only\">-</span></a><h4 class=\"type-name\">" + temp_Category + "</h4></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+
+            $("#relaized-gainloss-report").append(temp_class + temp_Category + temp_tbody_headerline + temp_tr + temp_control_button + temp_title_collapse + temp_tr2 + temp_control_button2 + temp_title_expand + "</tbody>")
+
+            var temp_detail_position_id = temp_class + "-rlzd-position-full-details"
+
+            var temp_tbody_container = "<tbody class=\"security-position-list rlz-security-position-list\" id=\"" + temp_detail_position_id + "\" style=\"display:none\">"
+            var temp_detail_keys = Object.keys(realizedList[i].details)
+            var temp_tbody_content = "";
+            for (j = 0; j < temp_detail_keys.length; j++) {
+                var tempsecurity = realizedList[i].details[j].SecurityName
+                var tempriskcategory = realizedList[i].details[j].Country
+                var tempcurrency = realizedList[i].details[j].Currency
+                var tempcost = realizedList[i].details[j].Cost
+                var tempproceeds = realizedList[i].details[j].Proceeds
+                var tempstgl = realizedList[i].details[j].stgainloss
+                var templtgl = realizedList[i].details[j].ltgainloss
+                var tempintexp = realizedList[i].details[j].intexp
+                var tempintrev = realizedList[i].details[j].intrev
+                var temptotalusd = realizedList[i].details[j].totalrlzusd
+                var tempisin = realizedList[i].details[j].ISIN
+                temp_tbody_content = temp_tbody_content + "<tr><td class=\"security\" data-x=\"" + i + "\" data-y=\"" + j + "\">" + tempsecurity  + "</td><td class=\"riskcategory\" style=\"text-align: center\">" + tempriskcategory + "</td><td class=\"currency\" style=\"text-align: center\">" + tempcurrency + "</td><td class=\"cost\" style=\"text-align: right\">" + formatNumber(tempcost.toFixed(0)) + "</td><td class=\"proceeds\" style=\"text-align: right\">" + formatNumber(tempproceeds.toFixed(0)) + "</td><td class=\"" + temp_class + "-rlzd-stgl stgl color-coding\"  style=\"text-align: right\">" + formatNumber(tempstgl.toFixed(0)) + "</td><td class=\"" + temp_class + "-rlzd-ltgl ltgl color-coding\"  style=\"text-align: right\">" + formatNumber(templtgl.toFixed(0)) + "</td><td class=\"intexp\" style=\"text-align: right\">" + formatNumber(tempintexp.toFixed(0)) + "</td><td class=\"intrev\" style=\"text-align: right\">" + formatNumber(tempintrev.toFixed(0)) + "</td><td class=\"" + temp_class + "-rlzd-totalusd totalusd color-coding\"  style=\"text-align: right\">" + formatNumber(temptotalusd.toFixed(0)) + "</td><td class=\"isin rlz-isin\" style=\"text-align: center\" >" + tempisin + "</td></tr>"
+            }
+            $("#relaized-gainloss-report").append(temp_tbody_container + temp_tbody_content + "</tbody>")
+            var temp_footer = "<tbody class=\"footer-row rlz-footer-row\" id=\"" + temp_class + "-rlzd-footer-row\" style=\"display:none\"><tr ><td><h4>" + temp_Category + " Total</h4></td><td></td><td></td><td></td><td></td><td class=\"" + temp_class + "-rlzd-stgl-subtotal\" id=" + temp_class + "-rlzd-stgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A STGL</td><td class=\"" + temp_class + "-rlzd-ltgl-subtotal\" id=\"" + temp_class + "-rlzd-ltgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A LTGL</td><td></td><td></td><td class=\"" + temp_class + "-rlzd-totalusd-subtotal\" id=\"" + temp_class + "-rlzd-totalusd-subtotal\" style=\"text-align: right; padding: 0 10px\">#N/A Total Rlz USD</td><td></td></tr></tbody>"
+            
+            $("#relaized-gainloss-report").append(temp_footer)
+           	
+
+
+        var sum_temp_rlzd_stgl = 0, sum_temp_rlzd_ltgl = 0, sum_temp_rlzd_totalusd = 0;
+        $("." + temp_class + "-rlzd-stgl").each(function () {
+            temp_value = unformatNumber($(this).text())
+            if (!isNaN(temp_value) && temp_value.length != 0) {
+                sum_temp_rlzd_stgl += parseFloat(temp_value);
+            }
+        });
+        $("." + temp_class + "-rlzd-ltgl").each(function () {
+            temp_value = unformatNumber($(this).text())
+            if (!isNaN(temp_value) && temp_value.length != 0) {
+                sum_temp_rlzd_ltgl += parseFloat(temp_value);
+            }
+        });
+        $("." + temp_class + "-rlzd-totalusd").each(function () {
+            temp_value = unformatNumber($(this).text())
+            if (!isNaN(temp_value) && temp_value.length != 0) {
+                sum_temp_rlzd_totalusd += parseFloat(temp_value);
+            }
+        });
+
+           	
+        $('.' + temp_class + '-rlzd-stgl-subtotal').text(formatNumber(sum_temp_rlzd_stgl.toFixed(0)));
+        $('.' + temp_class + '-rlzd-ltgl-subtotal').text(formatNumber(sum_temp_rlzd_ltgl.toFixed(0)));
+        $('.' + temp_class + '-rlzd-totalusd-subtotal').text(formatNumber(sum_temp_rlzd_totalusd.toFixed(0)));
+
+
+        sum_account_rlzd_stgl += sum_temp_rlzd_stgl
+        sum_account_rlzd_ltgl += sum_temp_rlzd_ltgl
+        sum_account_rlzd_totalusd += sum_temp_rlzd_totalusd
+        }
+        
+        
+        $("#relaized-gainloss-report").append("<tbody class =\"other-tbody\" ><tr><td class=\"gl-report-session-title\">Total (Realized)</td><td></td><td></td><td></td><td></td><td id=\"account-rlzd-stgl-total\" class=\"total-row\">#N/A</td><td id=\"account-rlzd-ltgl-total\" class=\"total-row\">#N/A</td><td></td><td></td><td id=\"account-rlzd-totalusd-total\" class=\"total-row\">#N/A</td><td></td></tr></tbody>")
+           	
+        
+        $("#relaized-gainloss-report").append("<tbody class =\"other-tbody\" style=\"border-top: 3px solid #005CB3;\"><tr><td class =\"gl-report-session-title\">Unrealized G/L</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody>")
+        
+        
+        //update unrealized details
+        for (i = 0; i < unrealizedList.length; i++) {
+            var temp_class = unrealizedList[i].class
+            var temp_Category = unrealizedList[i].categoryName
+            var temp_tbody_headerline = "<tbody class=\"" + temp_class + " groupheader-row urlz-groupheader-row\" id=\"" + temp_class + "-unrlzd-header-row\">"
+            var temp_tr = " <tr class=\"group-collapsed collapse-header\" id=" + temp_class + "-unrlzd-collapse-header><td class=\"grouping wrappable\" colspan=\"1\">"
+            var temp_control_button = "<a href=\"javascript:void(0)\"; class= \"expandcollapse collapse-anchor\" id=\"" + temp_class + "-unrlzd-expand-icon\" data-groupid=\"" + temp_class + "-unrlzd\" data-fundName=\"Perseus\"><span class=\"sr-only\">+</span></a><h4 class=\"type-name\">" + temp_Category + "</h4></td>"
+            var temp_title_collapse = "<td></td><td></td><td></td><td></td><td class=\"" + temp_class + "-unrlzd-stgl-subtotal urlz-stgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A stgl</td><td class=\"" + temp_class + "-unrlzd-ltgl-subtotal urlz-ltgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A ltgl</td><td></td><td></td><td  class=\"" + temp_class + "-unrlzd-totalusd-subtotal urlz-totalusd-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A totalrlzusd</td><td></td></tr>"
+            var temp_tr2 = "<tr class=\"group-expanded expand-header\" id=\"" + temp_class + "-unrlzd-expand-header\" style=\"display:none\"><td class=\"grouping wrappable\" colspan=\"1\">"
+            var temp_control_button2 = "<a href=\"javascript:void(0);\" class=\"expandcollapse expand-anchor\" id=\"" + temp_class + "-unrlzd-collapse-icon\" data-groupid=\"" + temp_class + "-unrlzd\" data-fundName=\"Perseus\">"
+            var temp_title_expand = "<span class=\"sr-only\">-</span></a><h4 class=\"type-name\">" + temp_Category + "</h4></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+
+            $("#relaized-gainloss-report").append(temp_class + temp_Category + temp_tbody_headerline + temp_tr + temp_control_button + temp_title_collapse + temp_tr2 + temp_control_button2 + temp_title_expand + "</tbody>")
+
+            var temp_detail_position_id = temp_class + "-unrlzd-position-full-details"
+
+            var temp_tbody_container = "<tbody class=\"security-position-list urlz-security-position-list\" id=\"" + temp_detail_position_id + "\" style=\"display:none\">"
+            var temp_detail_keys = Object.keys(unrealizedList[i].details)
+            var temp_tbody_content = "";
+            for (j = 0; j < temp_detail_keys.length; j++) {
+                var tempsecurity = unrealizedList[i].details[j].SecurityName
+                var tempriskcategory = unrealizedList[i].details[j].Country
+                //var tempcoupon = unrealizedList[i].details[j].Coupon
+                //var tempmaturity = unrealizedList[i].details[j].Maturity
+                var tempcurrency = unrealizedList[i].details[j].Currency
+                var tempcost = unrealizedList[i].details[j].Cost
+                var tempproceeds = unrealizedList[i].details[j].Proceeds
+                var tempstgl = unrealizedList[i].details[j].stgainloss
+                var templtgl = unrealizedList[i].details[j].ltgainloss
+                var tempintexp = unrealizedList[i].details[j].intexp
+                var tempintrev = unrealizedList[i].details[j].intrev
+                var temptotalusd = unrealizedList[i].details[j].totalrlzusd
+                var tempisin = unrealizedList[i].details[j].ISIN
+                temp_tbody_content = temp_tbody_content + "<tr><td class=\"security\" data-x=\"" + i + "\" data-y=\"" + j + "\">" + tempsecurity  + "</td><td class=\"riskcategory\" style=\"text-align: center\">" + tempriskcategory + "</td><td class=\"currency\" style=\"text-align: center\">" + tempcurrency + "</td><td class=\"cost\" style=\"text-align: right\">" + tempcost + "</td><td class=\"proceeds\" style=\"text-align: right\">" + tempproceeds + "</td><td class=\"" + temp_class + "-unrlzd-stgl stgl color-coding\"  style=\"text-align: right\">" + formatNumber(tempstgl.toFixed(0)) + "</td><td class=\"" + temp_class + "-unrlzd-ltgl ltgl color-coding\"  style=\"text-align: right\">" + formatNumber(templtgl.toFixed(0)) + "</td><td class=\"intexp\" style=\"text-align: right\">" + tempintexp + "</td><td class=\"intrev\" style=\"text-align: right\">" + tempintrev + "</td><td class=\"" + temp_class + "-unrlzd-totalusd totalusd color-coding\"  style=\"text-align: right\">" + formatNumber(temptotalusd.toFixed(0)) + "</td><td class=\"isin urlz-isin\" style=\"text-align: center\" >" + tempisin + "</td></tr>"
+            }
+            $("#relaized-gainloss-report").append(temp_tbody_container + temp_tbody_content + "</tbody>")
+            var temp_footer = "<tbody class=\"footer-row urlz-footer-row\" id=\"" + temp_class + "-unrlzd-footer-row\" style=\"display:none\"><tr ><td><h4>" + temp_Category + " Total</h4></td><td></td><td></td><td></td><td></td><td class=\"" + temp_class + "-unrlzd-stgl-subtotal\" id=" + temp_class + "-unrlzd-stgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A STGL</td><td class=\"" + temp_class + "-unrlzd-ltgl-subtotal\" id=\"" + temp_class + "-unrlzd-ltgl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A LTGL</td><td></td><td></td><td class=\"" + temp_class + "-unrlzd-totalusd-subtotal\" id=\"" + temp_class + "-unrlzd-totalusd-subtotal\" style=\"text-align: right; padding: 0 10px\">#N/A Total Rlz USD</td><td></td></tr></tbody>"
+            
+            $("#relaized-gainloss-report").append(temp_footer)
+       	
+       	
+       	
+       	
+        
+
+        var sum_temp_unrlzd_stgl = 0, sum_temp_unrlzd_ltgl = 0, sum_temp_unrlzd_totalusd = 0;
+        $("." + temp_class + "-unrlzd-stgl").each(function () {
+            temp_value = unformatNumber($(this).text())
+            if (!isNaN(temp_value) && temp_value.length != 0) {
+                sum_temp_unrlzd_stgl += parseFloat(temp_value);
+            }
+        });
+        $("." + temp_class + "-unrlzd-ltgl").each(function () {
+            temp_value = unformatNumber($(this).text())
+            if (!isNaN(temp_value) && temp_value.length != 0) {
+                sum_temp_unrlzd_ltgl += parseFloat(temp_value);
+            }
+        });
+        $("." + temp_class + "-unrlzd-totalusd").each(function () {
+            temp_value = unformatNumber($(this).text())
+            if (!isNaN(temp_value) && temp_value.length != 0) {
+                sum_temp_unrlzd_totalusd += parseFloat(temp_value);
+            }
+        });
+        $('.' + temp_class + '-unrlzd-stgl-subtotal').text(formatNumber(sum_temp_unrlzd_stgl.toFixed(0)));
+        $('.' + temp_class + '-unrlzd-ltgl-subtotal').text(formatNumber(sum_temp_unrlzd_ltgl.toFixed(0)));
+        $('.' + temp_class + '-unrlzd-totalusd-subtotal').text(formatNumber(sum_temp_unrlzd_totalusd.toFixed(0)));
+
+
+        sum_account_unrlzd_stgl += sum_temp_unrlzd_stgl
+        sum_account_unrlzd_ltgl += sum_temp_unrlzd_ltgl
+        sum_account_unrlzd_totalusd += sum_temp_unrlzd_totalusd
+        }
+        
+        $("#relaized-gainloss-report").append("<tbody class=\"other-tbody\"><tr><td class=\"gl-report-session-title\" >Total (Unrealized)</td><td></td><td></td><td></td><td></td><td id=\"account-unrlzd-stgl-total\" class=\"total-row\">#N/A</td><td id=\"account-unrlzd-ltgl-total\" class=\"total-row\">#N/A</td><td></td><td></td><td id=\"account-unrlzd-totalusd-total\" class=\"total-row\">#N/A</td><td></td></tr></tbody>")
+        
+        
+        
+        $("#relaized-gainloss-report").append("<tfoot><tr><td class =\"gl-report-session-title\">Total Gain/Loss</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td id=\"account-pnl-total\" style=\"text-align: right; padding: 0 10px; font-weight: 700\">#N/A</td><td></td></tr></tfoot>")
+        
+        $('#account-rlzd-stgl-total').text(formatNumber(sum_account_rlzd_stgl.toFixed(0)));
+        $('#account-rlzd-ltgl-total').text(formatNumber(sum_account_rlzd_ltgl.toFixed(0)));
+        $('#account-rlzd-totalusd-total').text(formatNumber(sum_account_rlzd_totalusd.toFixed(0)));
+        
+        $('#account-unrlzd-stgl-total').text(formatNumber(sum_account_unrlzd_stgl.toFixed(0)));
+        $('#account-unrlzd-ltgl-total').text(formatNumber(sum_account_unrlzd_ltgl.toFixed(0)));
+        $('#account-unrlzd-totalusd-total').text(formatNumber(sum_account_unrlzd_totalusd.toFixed(0)));
+        
+        var temp_sum = unformatNumber($("#account-rlzd-totalusd-total").text())+unformatNumber($("#account-unrlzd-totalusd-total").text())
+        $("#account-pnl-total").html(formatNumber(temp_sum))
+
+        $(".collapse-anchor").click(function () {
+            var temp_cate = $('#' + this.id).attr("data-groupid")
+            $("#" + temp_cate + "-collapse-header").css("display", "none");
+            $("#" + temp_cate + "-expand-header").css("display", "table-row");
+            $("#" + temp_cate + "-position-full-details").css("display", "table-row-group");
+            $("#" + temp_cate + "-footer-row").css("display", "table-row-group");
+            delete temp_cate
+        });
+        $(".expand-anchor").click(function () {
+            var temp_cate = $('#' + this.id).attr("data-groupid")
+            $("#" + temp_cate + "-collapse-header").css("display", "table-row");
+            $("#" + temp_cate + "-expand-header").css("display", "none");
+            $("#" + temp_cate + "-position-full-details").css("display", "none");
+            $("#" + temp_cate + "-footer-row").css("display", "none");
+            delete temp_cate
+        });
+        $("#table-control").click(function(){
+	        if($("#table-control").prop('value')=="EXPAND"){
+	            $("#table-control").prop('value','COLLAPSE')
+	            $("#table-control").prop('src','../static/up.png')
+	            $(".collapse-header").css("display", "none");
+	            $(".expand-header").css("display", "table-row");
+	            $(".security-position-list").css("display", "table-row-group");
+	            $(".footer-row").css("display", "table-row-group");
+	        }else{                   
+	            $("#table-control").prop('value','EXPAND')
+	            $("#table-control").prop('src','../static/down.png')
+	            $(".collapse-header").css("display", "table-row");
+	            $(".expand-header").css("display", "none");
+	            $(".security-position-list").css("display", "none");
+	            $(".footer-row").css("display", "none");
+	        }
+	    })
+        
+        $(".urlz-isin").click(function () {
+            $("#urlz-info tbody tr").remove()                
+            i_index = $(this).closest("td").siblings(".security").attr('data-x')
+            j_index = $(this).closest("td").siblings(".security").attr('data-y')
+            if (unrealizedList[i_index].details[j_index].Category == "REPO" || unrealizedList[i_index].categoryName == "REPO") {
+            	var SecName = unrealizedList[i_index].details[j_index].SecurityName + "&nbsp REPO &nbsp" 
+            }else{
+               var SecName = unrealizedList[i_index].details[j_index].SecurityName
+            }
+            $("#urlz-popup .title").html(SecName)
+            for(k = 0;k<unrealizedList[i_index].details[j_index].costBasis.length;k++ ){
+                var tempCBInfo = "<tr><td>" + unrealizedList[i_index].details[j_index].costBasis[k].TradeDate + "</td><td>" + formatNumber(unrealizedList[i_index].details[j_index].costBasis[k].Quantity) + "</td><td>" + unrealizedList[i_index].details[j_index].costBasis[k].Price + "</td><td>" + unrealizedList[i_index].details[j_index].costBasis[k].FxRate + "</td><td>" + formatNumber(unrealizedList[i_index].details[j_index].costBasis[k].Pnl.toFixed(0)) + "</td></tr>"
+                $("#urlz-info tbody").append(tempCBInfo)
+			}
+			var e = window.event;
+			var posX = e.pageX;
+            var posY = e.pageY;
+            var w = $("#urlz-popup").width()
+            var h = $("#urlz-popup").height()
+            $("#urlz-popup").css("left", (posX - w - 45) + "px");
+            $("#urlz-popup").css("top", (posY - h - 20) + "px");
+            $("#urlz-popup").fadeIn(400)
+        })
+        $(".urlz-isin").mouseleave(function () {
+			$("#urlz-popup").fadeOut(100)
+            //$("#urlz-info tbody tr").remove()
+        })
+        
+
+        $(".rlz-isin").click(function () {
+            $("#rlz-info tbody tr").remove()                
+            i_index = $(this).closest("td").siblings(".security").attr('data-x')
+            j_index = $(this).closest("td").siblings(".security").attr('data-y')
+            if (realizedList[i_index].details[j_index].Category == "REPO" || realizedList[i_index].categoryName == "REPO") {
+            	var SecName = realizedList[i_index].details[j_index].SecurityName + "&nbsp REPO &nbsp" 
+            }else{
+               var SecName = realizedList[i_index].details[j_index].SecurityName
+            }
+            $("#rlz-popup .title").html(SecName)
+            for(k = 0;k<realizedList[i_index].details[j_index].realizedDetails.length;k++ ){
+                var tempRlzInfo = "<tr><td>" + realizedList[i_index].details[j_index].realizedDetails[k].initialDate + "</td><td>" + realizedList[i_index].details[j_index].realizedDetails[k].closeDate + "</td><td>" + realizedList[i_index].details[j_index].realizedDetails[k].initialPrice.toFixed(2) + "</td><td>" + realizedList[i_index].details[j_index].realizedDetails[k].closePrice.toFixed(2)  + "</td><td>" + formatNumber(realizedList[i_index].details[j_index].realizedDetails[k].quantity) + "</td><td>" + formatNumber(realizedList[i_index].details[j_index].realizedDetails[k].pnl.toFixed(0)) + "</td></tr>"
+                $("#rlz-info tbody").append(tempRlzInfo)
+			}
+			var e = window.event;
+			var posX = e.pageX;
+            var posY = e.pageY;
+            var w = $("#rlz-popup").width()
+            var h = $("#rlz-popup").height()
+            $("#rlz-popup").css("left", (posX - w - 45) + "px");
+            $("#rlz-popup").css("top", (posY - h - 20) + "px");
+            $("#rlz-popup").fadeIn(400)
+        })
+        $(".rlz-isin").mouseleave(function () {
+			$("#rlz-popup").fadeOut(100)
+            //$("#rlz-info tbody tr").remove()
+        })
+        
+        
+        
+        var sortMethod = "ascend"
+ 
+		$(".sort").click(function () {
+			var expandStatus = false;
+			$(".group-expanded").each(function(){
+				if($(this).css('display')=='table-row'){
+					expandStatus = true
+				}	
+			})
+			if(expandStatus){
+				var tempSortBase = $(this).attr("data-sort")
+	            var tb = $("#relaized-gainloss-report").children('.security-position-list');
+	            var SortBase = "." + tempSortBase
+	            if (sortMethod == "ascend") {
+	                tb.each(function () {
+	                    var trow = $(this).children('tr')
+	                    trow.sort(function (A, B) {
+	                        if (tempSortBase == "security" ||tempSortBase == "riskcategory"  || tempSortBase == "currency") {
+	                            var XX = $(A).children(SortBase).text()
+	                            var YY = $(B).children(SortBase).text()
+	                        } else {
+	                            if (tempSortBase == "Maturity") {
+	                                var XX = parseInt($(A).children(SortBase).text().replace(/-/g, ""))
+	                                var YY = parseInt($(B).children(SortBase).text().replace(/-/g, ""))
+	                            } else {
+	                                var XX = unformatNumber($(A).children(SortBase).text())
+	                                var YY = unformatNumber($(B).children(SortBase).text())
+	                            }
+	                        }
+	                        return ((YY < XX) ? -1 : ((YY > XX) ? 1 : 0));
+	                    }).appendTo($(this))
+	                });
+	                sortMethod = "descend";
+	            }else {
+	                tb.each(function () {
+	                    var trow = $(this).children('tr')
+	                    trow.sort(function (A, B) {
+	                        if (tempSortBase == "security" ||tempSortBase == "riskcategory"  || tempSortBase == "currency") {
+	                            var XX = $(A).children(SortBase).text()
+	                            var YY = $(B).children(SortBase).text()
+	                        } else {
+	                            if (tempSortBase == "Maturity") {
+	                                var XX = parseInt($(A).children(SortBase).text().replace(/-/g, ""))
+	                                var YY = parseInt($(B).children(SortBase).text().replace(/-/g, ""))
+	                            } else {
+	                                var XX = unformatNumber($(A).children(SortBase).text())
+	                                var YY = unformatNumber($(B).children(SortBase).text())
+	                            }
+	                        }
+	                        return ((YY > XX) ? -1 : ((YY < XX) ? 1 : 0));
+	                    }).appendTo($(this))
+	                });
+	                sortMethod = "ascend"
+	            }
+			}else{
+				var tempSortBase = $(this).attr("data-sort")
+				if(tempSortBase == 'stgl' || tempSortBase == 'ltgl' || tempSortBase == 'totalusd'){
+					var rlzSortBase = ".rlz-" +tempSortBase +'-subtotal'
+					var listOfRlzSortBase = []
+					var urlzSortBase = ".urlz-" +tempSortBase +'-subtotal'
+					var listOfUrlzSortBase = []
+					
+					$('.rlz-groupheader-row').each(function(){
+						listOfRlzSortBase.push(unformatNumber($(this).find(rlzSortBase).text()))
+						$(this).appendTo("#sorting-rlz-header-row-temp")
+					})
+					$('.rlz-security-position-list').each(function(){
+						$(this).appendTo("#sorting-rlz-details-temp")
+					})
+					$('.rlz-footer-row').each(function(){
+						$(this).appendTo("#sorting-rlz-footer-row-temp")
+					})
+					$('.other-tbody').each(function(){
+						$(this).appendTo("#sorting-other-tbody-temp")
+					})
+					$('.urlz-groupheader-row').each(function(){
+						listOfUrlzSortBase.push(unformatNumber($(this).find(urlzSortBase).text()))
+						$(this).appendTo("#sorting-urlz-header-row-temp")
+					})
+					$('.urlz-security-position-list').each(function(){
+						$(this).appendTo("#sorting-urlz-details-temp")
+					})
+					$('.urlz-footer-row').each(function(){
+						$(this).appendTo("#sorting-urlz-footer-row-temp")
+					})
+					
+					rankOfRlzSortBase=Array.from(Array(listOfRlzSortBase.length).keys()).sort((a,b)=>listOfRlzSortBase[a]<listOfRlzSortBase[b]?-1:(listOfRlzSortBase[b]<listOfRlzSortBase[a])|0)
+					rankOfUrlzSortBase=Array.from(Array(listOfUrlzSortBase.length).keys()).sort((a,b)=>listOfUrlzSortBase[a]<listOfUrlzSortBase[b]?-1:(listOfUrlzSortBase[b]<listOfUrlzSortBase[a])|0)
+					if(sortMethod == 'ascend'){
+						for(i=0;i<rankOfRlzSortBase.length;i++){
+							$("#sorting-rlz-header-row-temp tbody").eq(rankOfRlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-rlz-details-temp tbody").eq(rankOfRlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-rlz-footer-row-temp tbody").eq(rankOfRlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+						};
+						for(i=0;i<2;i++){
+							$("#sorting-other-tbody-temp tbody").eq(i).clone().appendTo("#relaized-gainloss-report")
+						};
+						for(i=0;i<rankOfUrlzSortBase.length;i++){
+							$("#sorting-urlz-header-row-temp tbody").eq(rankOfUrlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-urlz-details-temp tbody").eq(rankOfUrlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-urlz-footer-row-temp tbody").eq(rankOfUrlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+						};
+						$("#sorting-other-tbody-temp tbody").eq(2).clone().appendTo("#relaized-gainloss-report")
+						
+						$("#sorting-rlz-header-row-temp tbody").remove()
+						$("#sorting-rlz-details-temp tbody").remove()
+						$("#sorting-rlz-footer-row-temp tbody").remove()
+						$("#sorting-other-tbody-temp tbody").remove()
+						$("#sorting-urlz-header-row-temp tbody").remove()
+						$("#sorting-urlz-details-temp tbody").remove()
+						$("#sorting-urlz-footer-row-temp tbody").remove()
+						sortMethod = 'descend'
+						expandStatus=true
+						$(".collapse-anchor").click(function () {
+				            var temp_cate = $('#' + this.id).attr("data-groupid")
+				            $("#" + temp_cate + "-collapse-header").css("display", "none");
+				            $("#" + temp_cate + "-expand-header").css("display", "table-row");
+				            $("#" + temp_cate + "-position-full-details").css("display", "table-row-group");
+				            $("#" + temp_cate + "-footer-row").css("display", "table-row-group");
+				            delete temp_cate
+				        });
+				        $(".expand-anchor").click(function () {
+				            var temp_cate = $('#' + this.id).attr("data-groupid")
+				            $("#" + temp_cate + "-collapse-header").css("display", "table-row");
+				            $("#" + temp_cate + "-expand-header").css("display", "none");
+				            $("#" + temp_cate + "-position-full-details").css("display", "none");
+				            $("#" + temp_cate + "-footer-row").css("display", "none");
+				            delete temp_cate
+				        });
+					}else{
+						for(i=rankOfRlzSortBase.length-1;i>=0;i--){
+							$("#sorting-rlz-header-row-temp tbody").eq(rankOfRlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-rlz-details-temp tbody").eq(rankOfRlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-rlz-footer-row-temp tbody").eq(rankOfRlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+						};
+						for(i=0;i<2;i++){
+							$("#sorting-other-tbody-temp tbody").eq(i).clone().appendTo("#relaized-gainloss-report")
+						};
+						for(i=rankOfUrlzSortBase.length-1;i>=0;i--){
+							$("#sorting-urlz-header-row-temp tbody").eq(rankOfUrlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-urlz-details-temp tbody").eq(rankOfUrlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+							$("#sorting-urlz-footer-row-temp tbody").eq(rankOfUrlzSortBase[i]).clone().appendTo("#relaized-gainloss-report")
+						};
+						$("#sorting-other-tbody-temp tbody").eq(2).clone().appendTo("#relaized-gainloss-report")
+						
+						$("#sorting-rlz-header-row-temp tbody").remove()
+						$("#sorting-rlz-details-temp tbody").remove()
+						$("#sorting-rlz-footer-row-temp tbody").remove()
+						$("#sorting-other-tbody-temp tbody").remove()
+						$("#sorting-urlz-header-row-temp tbody").remove()
+						$("#sorting-urlz-details-temp tbody").remove()
+						$("#sorting-urlz-footer-row-temp tbody").remove()
+						sortMethod = 'ascend'
+						expandStatus=true
+						$(".collapse-anchor").click(function () {
+				            var temp_cate = $('#' + this.id).attr("data-groupid")
+				            $("#" + temp_cate + "-collapse-header").css("display", "none");
+				            $("#" + temp_cate + "-expand-header").css("display", "table-row");
+				            $("#" + temp_cate + "-position-full-details").css("display", "table-row-group");
+				            $("#" + temp_cate + "-footer-row").css("display", "table-row-group");
+				            delete temp_cate
+				        });
+				        $(".expand-anchor").click(function () {
+				            var temp_cate = $('#' + this.id).attr("data-groupid")
+				            $("#" + temp_cate + "-collapse-header").css("display", "table-row");
+				            $("#" + temp_cate + "-expand-header").css("display", "none");
+				            $("#" + temp_cate + "-position-full-details").css("display", "none");
+				            $("#" + temp_cate + "-footer-row").css("display", "none");
+				            delete temp_cate
+				        });
+					}	
+				}
+			}
+			console.log("sorting function ends")
+        })
+        $(".color-coding").each(function(){
+			var temp = unformatNumber($(this).text())
+            $(this).removeClass("positive-color-coding")
+            $(this).removeClass("negative-color-coding")
+            if (temp > 0) {
+				$(this).addClass("positive-color-coding")
+            } else {
+				if (temp < 0) {
+					$(this).addClass("negative-color-coding")
+                }
+            }               
+         });
+    })
+    
+
+    function formatNumber(num) { //add thousand seperator
+        return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
+    }
+    function unformatNumber(str) { //replace thousand seperator
+
+        if (/%$/.test(str)) { str.replace("%", "") }
+        var temp = str
+        temp = str.replace(/,/g, "")
+        num = parseFloat(temp)
+        return num
+    }
+    
+    var today = new Date()
+	var selected_year = Number($("#year_realizedGL").children("option:selected").val())
+	var current_year = today.getFullYear()
+	var current_month = today.getMonth()
+    updateMonthSelection(selected_year,current_year,current_month)
+    
+    $("#year_realizedGL").change(function(){
+		var selected_year = Number($("#year_realizedGL").children("option:selected").val())
+		var current_year = today.getFullYear()
+		var current_month = today.getMonth()
+		updateMonthSelection(selected_year,current_year,current_month)
+	
+	})
+
+    function updateMonthSelection(selected_year,current_year,current_month){
+		if(selected_year<current_year){
+			$("#month_realizedGL").children("option").remove();
+			{% if month == "0" %}
+			$("#month_realizedGL").append("<option value=\"0\" selected>Whole Year</option>")
+			{% else %}
+			$("#month_realizedGL").append("<option value=\"0\">Whole Year</option>")
+			{% endif %}
+			{% if month == "1" %}
+				$("#month_realizedGL").append("<option value=\"1\" selected>January</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"1\" >January</option>")
+			{% endif %}
+			{% if month == "2" %}
+				$("#month_realizedGL").append("<option value=\"2\" selected>February</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"2\">February</option>")
+			{% endif %}
+			{% if month == "3" %}
+				$("#month_realizedGL").append("<option value=\"3\" selected>March</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"3\">March</option>")
+			{% endif %}
+			{% if month == "4" %}
+				$("#month_realizedGL").append("<option value=\"4\" selected>April</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"4\">April</option>")
+			{% endif %}
+			{% if month == "5" %}
+				$("#month_realizedGL").append("<option value=\"5\" selected>May</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"5\">May</option>")
+			{% endif %}
+			{% if month == "6" %}
+				$("#month_realizedGL").append("<option value=\"6\" selected>June</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"6\">June</option>")
+			{% endif %}
+			{% if month == "7" %}
+				$("#month_realizedGL").append("<option value=\"7\" selected>July</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"7\">July</option>")
+			{% endif %}
+			{% if month == "8" %}
+				$("#month_realizedGL").append("<option value=\"8\" selected>August</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"8\">August</option>")
+			{% endif %}
+			{% if month == "9" %}
+				$("#month_realizedGL").append("<option value=\"9\" selected>September</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"9\">September</option>")
+			{% endif %}
+			{% if month == "10" %}
+				$("#month_realizedGL").append("<option value=\"10\" selected>October</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"10\">October</option>")
+			{% endif %}
+			{% if month == "11" %}
+				$("#month_realizedGL").append("<option value=\"11\" selected>November</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"11\">November</option>")
+			{% endif %}
+			{% if month == "12" %}
+				$("#month_realizedGL").append("<option value=\"12\" selected>December</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"12\">December</option>")
+			{% endif %}
+		}
+		if(selected_year==current_year){
+			$("#month_realizedGL").children("option").remove();
+			{% if month == "0" %}
+			$("#month_realizedGL").append("<option value=\"0\" selected>Whole Year</option>")
+			{% else %}
+			$("#month_realizedGL").append("<option value=\"0\">Whole Year</option>")
+			{% endif %}
+			{% if month == "1" %}
+				$("#month_realizedGL").append("<option value=\"1\" selected>January</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"1\" >January</option>")
+			{% endif %}
+			{% if month == "2" %}
+				$("#month_realizedGL").append("<option value=\"2\" selected>February</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"2\">February</option>")
+			{% endif %}
+			{% if month == "3" %}
+				$("#month_realizedGL").append("<option value=\"3\" selected>March</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"3\">March</option>")
+			{% endif %}
+			{% if month == "4" %}
+				$("#month_realizedGL").append("<option value=\"4\" selected>April</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"4\">April</option>")
+			{% endif %}
+			{% if month == "5" %}
+				$("#month_realizedGL").append("<option value=\"5\" selected>May</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"5\">May</option>")
+			{% endif %}
+			{% if month == "6" %}
+				$("#month_realizedGL").append("<option value=\"6\" selected>June</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"6\">June</option>")
+			{% endif %}
+			{% if month == "7" %}
+				$("#month_realizedGL").append("<option value=\"7\" selected>July</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"7\">July</option>")
+			{% endif %}
+			{% if month == "8" %}
+				$("#month_realizedGL").append("<option value=\"8\" selected>August</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"8\">August</option>")
+			{% endif %}
+			{% if month == "9" %}
+				$("#month_realizedGL").append("<option value=\"9\" selected>September</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"9\">September</option>")
+			{% endif %}
+			{% if month == "10" %}
+				$("#month_realizedGL").append("<option value=\"10\" selected>October</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"10\">October</option>")
+			{% endif %}
+			{% if month == "11" %}
+				$("#month_realizedGL").append("<option value=\"11\" selected>November</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"11\">November</option>")
+			{% endif %}
+			{% if month == "12" %}
+				$("#month_realizedGL").append("<option value=\"12\" selected>December</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"12\">December</option>")
+			{% endif %}
+			$("#month_realizedGL Option").each(function(){
+				if($(this).val()>current_month+1){
+					$(this).remove()
+				}
+			});
+		}
+		if(selected_year>current_year){
+			$("#month_realizedGL").children("option").remove();
+		}
+		if(selected_year==2016){
+			$("#month_realizedGL").children("option").remove();
+			{% if month == "5" %}
+				$("#month_realizedGL").append("<option value=\"5\" selected>May</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"5\">May</option>")
+			{% endif %}
+			{% if month == "6" %}
+				$("#month_realizedGL").append("<option value=\"6\" selected>June</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"6\">June</option>")
+			{% endif %}
+			{% if month == "7" %}
+				$("#month_realizedGL").append("<option value=\"7\" selected>July</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"7\">July</option>")
+			{% endif %}
+			{% if month == "8" %}
+				$("#month_realizedGL").append("<option value=\"8\" selected>August</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"8\">August</option>")
+			{% endif %}
+			{% if month == "9" %}
+				$("#month_realizedGL").append("<option value=\"9\" selected>September</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"9\">September</option>")
+			{% endif %}
+			{% if month == "10" %}
+				$("#month_realizedGL").append("<option value=\"10\" selected>October</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"10\">October</option>")
+			{% endif %}
+			{% if month == "11" %}
+				$("#month_realizedGL").append("<option value=\"11\" selected>November</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"11\">November</option>")
+			{% endif %}
+			{% if month == "12" %}
+				$("#month_realizedGL").append("<option value=\"12\" selected>December</option>")
+			{% else %}
+				$("#month_realizedGL").append("<option value=\"12\">December</option>")
+			{% endif %}
+		}
+	}
+
+</script>
+
+{% endblock %}

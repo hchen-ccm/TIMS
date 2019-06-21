@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block content %}
+
+<meta charset="utf-8" />
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+
+<style>
+    body {
+        font: 13px Helvetica;
+    }
+
+    h4 {
+        font-weight: bold;
+    }
+
+    table {
+        border-collapse: collapse;
+        border: 4px solid #005CB3;
+    }
+    .secondary_input_selection{
+    	width:150px;
+		background-color:white;
+		color:black;
+    }
+    #investor_repot_title{
+    	margin:20px auto;
+    	text-align:center;
+    	font-weight:700;
+    	font-size:large
+    }
+    #investor_repot_dates{
+    	margin:10px auto;
+    	text-align:center;
+    	font-weight:500;
+    }
+    #investor-report-header td {
+        font-weight: 700;
+        height: 40px;
+    }
+    #investor-details-footer-title{
+		border-top:4px solid #005CB3;
+		border-bottom:2px solid #005CB3;
+    	font-weight: 700;
+        height: 40px;
+    }
+    #document-list-info-header tr td{
+    	font-weight: 700;
+        text-align:center;
+    }
+    #investor-details td{
+    	text-align:center;
+    }
+	.popup {
+		display:none;
+		position: absolute;
+		z-index:100;
+		background-color:white;
+        border: 1px solid #8a4419;
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, .5);
+     }
+     #document-list-popup .title {           
+        font-size:14px;
+        font-weight:600;
+        padding-top:10px;
+        padding-left:10px;
+     }
+     #document-list-info{
+		display: block;
+        margin: 15px;
+        border:none
+     }
+
+      .doc{
+      	cursor:pointer;
+      	text-decoration:underline;
+      }
+       
+</style>
+
+<script type="text/javascript">
+	$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
+	$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
+	
+	$("#pnav-shareholders").addClass("primary-active")
+	$("#snav-subredrecord").addClass("secondary-active")
+	$(".secondary-nav-account").hide()
+	$(".secondary-nav-investor").show()
+	$(".secondary-nav-risk").hide()
+	$("#navigation-container").css("margin-bottom","50px")
+	
+	function refresh()
+	{
+		var account = document.getElementById("account").value;
+		var investor = document.getElementById("investor_InvestorReport").value;
+	    window.location.replace("/sh2?account=" + account + "&investor=" + investor);
+	}
+</script>
+
+<form action="" method="post" name="InvestorReportDetails">
+	<select id="account" name="account">
+		{% if account == "PGOF" %}
+			<option value = "PGOF" selected>ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% else %}
+			<option value = "PGOF">ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% endif %}
+	</select>
+	
+
+	
+<div style="float:right;display:inline-block;margin-bottom:10px">
+	<select id="investor_InvestorReport" style="width:230px" class="secondary_input_selection" onchange="refresh()">
+		{% if investor == "All" %}
+			<option value="All" selected>All Investors</option>
+		{% else %}
+			<option value="All">All Investors</option>
+		{% endif %}
+		{% if investor == "Shahriar" %}
+			<option value="Shahriar" selected>Investor S</option>
+		{% else %}
+			<option value="Shahriar">Investor S</option>
+		{% endif %}
+		{% if investor == "Blue" %}
+			<option value="Blue" selected>Trust B</option>
+		{% else %}
+			<option value="Blue">Trust B</option>
+		{% endif %}
+		{% if investor == "Green" %}
+			<option value="Green" selected>Trust G</option>
+		{% else %}
+			<option value="Green">Trust G</option>
+		{% endif %}
+	</select>
+</div>
+</form>
+<div id="investor_details_container">
+    <div>
+        <table id="investor-details">
+            <thead id="investor-details-header" >
+                <tr style="font-weight: bold">
+                	<td>Value Date</td>
+                    <td>Investor Name</td>
+                    <td>Subscription / Redemption</td>
+                    <td>Type</td>
+                    <td>Amount</td>
+                    <td>Documents</td>
+                </tr>
+            </thead>
+            <tbody>
+            	{% for i in investHistory %}
+                <tr>
+                	<td class='date'>{{i.tradeDate}}</td>
+                    <td class='investor'>{{i.investorName}}</td>
+                    <td class='side'>{{i.side}}</td>
+                    <td>{{i.type}}</td>
+                    <td style="text-align:right" class="sub_red_amount">{{i.amount}}</td>
+                    
+                    <td class='doc' data-id={{i.id}}>details</td>
+                </tr>
+                {% endfor %}
+     		</tbody>
+     		<tfoot id="investor-details-footer-title">
+                <tr>
+                	<td>Total</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td id="amount_total" style="text-align:right"></td>
+                    <td></td>
+                </tr>
+     		<tfoot>                
+        </table>
+    </div>
+        <div id="document-list-popup" class='popup'>
+        <div class="title" id="document-list-popup-title"></div>
+        <table id="document-list-info">
+        	<thead id="document-list-info-header">
+            		<tr>
+            			<td>Documents</td>
+            			<td>Action</td>
+            		</tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+	</div>
+</div>
+ <script>
+ 	var sum_amount =0
+ 	var currentDocId = 0
+ 	var documentList = {{documentList|safe}}
+ 	$(".sub_red_amount").each(function(){
+ 		sum_amount+=unformatNumber($(this).text())
+ 	})
+ 	$("#amount_total").text(formatNumber(sum_amount.toFixed(2)))
+ 	
+ 	function formatNumber(num) { //add thousand seperator
+        return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
+    }
+    function unformatNumber(str) { //replace thousand seperator
+		if (/%$/.test(str)) { str.replace("%","")}
+        var temp = str
+        temp = str.replace(/,/g, "")
+        num = parseFloat(temp)
+        return num
+    }
+    $(".doc").click(function () {
+    	var tempID = $(this).attr('data-id')
+    	if($("#document-list-popup").css('display')=='none'){
+    		currentDocId = tempID
+    		$("#document-list-popup tbody tr").remove()
+    		var temp = $(this).siblings('.investor').text()+' '+ $(this).siblings('.side').text()
+	   		$("#document-list-popup-title").html(temp)
+	   		for(k = 0;k<documentList.length;k++){
+	   			if(documentList[k].id==tempID){
+	   				for(i=0;i<documentList[k].documents.length;i++){
+						var tempDocInfo = "<tr><td>" + documentList[k].documents[i].docName + "</td><td><span><a href=\""+documentList[k].documents[i].docDir+"\" target=\"_blank\">preview</a></span><span>&nbsp;&nbsp;</span><span><a href=\""+documentList[k].documents[i].docDir+"\" target=\"_blank\" download=\""+documentList[k].documents[i].docName+"\">download</a></span></td></tr>"
+	                   	$("#document-list-popup tbody").append(tempDocInfo)
+	   				}
+	   			}
+	   		}
+    		var e = window.event;
+			var posX = e.pageX;
+	        var posY = e.pageY;
+	        var w = $("#document-list-popup").width()
+	        var h = $("#document-list-popup").height()
+	        $("#document-list-popup").css("left", (posX - w - 25) + "px");
+	        $("#document-list-popup").css("top", (posY - h + 60) + "px");
+	        $("#document-list-popup").fadeIn(400)
+    	}else{
+    		if(currentDocId!=tempID){
+    			currentDocId = tempID
+    			$("#document-list-popup tbody tr").remove()
+    			var temp = $(this).siblings('.investor').text()+' '+ $(this).siblings('.side').text()
+		   		$("#document-list-popup-title").html(temp)
+		   		for(k = 0;k<documentList.length;k++){
+		   			if(documentList[k].id==tempID){
+		   				for(i=0;i<documentList[k].documents.length;i++){
+						var tempDocInfo = "<tr><td>" + documentList[k].documents[i].docName + "</td><td><span><a href=\""+documentList[k].documents[i].docDir+"\" target=\"_blank\">preview</a></span><span>&nbsp;&nbsp;</span><span><a href=\""+documentList[k].documents[i].docDir+"\" target=\"_blank\" download=\""+documentList[k].documents[i].docName+"\">download</a></span></td></tr>"
+		                   	$("#document-list-popup tbody").append(tempDocInfo)
+		   				}
+		   			}
+		   		}
+		   		var e = window.event;
+				var posX = e.pageX;
+		        var posY = e.pageY;
+		        var w = $("#document-list-popup").width()
+		        var h = $("#document-list-popup").height()
+		        $("#document-list-popup").css("left", (posX - w - 25) + "px");
+		        $("#document-list-popup").css("top", (posY - h + 60) + "px");
+		        $("#document-list-popup").fadeIn(400)
+    		}else{
+    			$("#document-list-popup").fadeOut(100)
+    		}
+    	}
+    })
+    $(window).click(function(e) {
+  		if ( $(e.target).closest('.doc').length === 0 ) {
+  			$("#document-list-popup").fadeOut(100)
+  		}
+	});
+    function updateDocumentListPopup(tempID){
+    $("#document-list-popup tbody tr").remove()
+   		var temp = $(this).siblings('.investor').text()+' '+ $(this).siblings('.side').text()
+   		$("#document-list-popup-title").html(temp)
+   		for(k = 0;k<documentList.length;k++){
+   			if(documentList[k].id==tempID){
+   				for(i=0;i<documentList[k].documents.length;i++){
+					var tempDocInfo = "<tr><td>" + documentList[k].documents[i].docName + "</td><td><span><a href=\""+documentList[k].documents[i].docDir+"\" target=\"_blank\" download=\""+documentList[k].documents[i].docName+"\">download</a></span></td></tr>"
+                   	$("#document-list-popup tbody").append(tempDocInfo)
+   				}
+   			}
+   		}
+    }
+    
+
+        	
+ </script>
+{% endblock %}

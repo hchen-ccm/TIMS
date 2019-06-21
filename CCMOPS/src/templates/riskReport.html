@@ -1,0 +1,551 @@
+<!-- extend base layout -->
+{% extends "base.html" %}
+{% block content %}
+
+
+
+    <title></title>
+	<meta charset="utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/sunburst.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <style>
+        #container {
+            
+        }
+        #summary1{
+           border-top: 4px solid #005CB3;
+           border-bottom: 2px solid #005CB3;
+           padding: 0 10px;
+           height: 40px;
+           font-weight: bold;
+        }
+        #performance-vs-benchmark{
+            background-color:#e1dede;
+            width:66%;
+            height:800px;
+            backface-visibility:hidden;
+            
+        }
+        #chart-container {
+            margin: 20px 10px 10px 10px;
+            width:100%;
+            height:500px;
+            backface-visibility:hidden;
+
+        }
+        #Performance-figure {
+        }
+        #portfolio-risk-exposure {
+            background-color:#e1dede;
+            width:66%;
+            height:800px;
+           
+
+        }
+        #sunburst-container {
+            width:80%;
+            height:800px;
+            backface-visibility:hidden;
+            float:left
+        }
+        .front {
+            transform-style: preserve-3d; 
+            position: absolute;
+            transition: all 0.36s ease-OUT;
+
+        }
+        .back {
+            transform-style: preserve-3d; 
+            position: absolute;
+            transition: all 0.36s ease-out;
+        }
+        .face-front {
+            z-index:1
+        }
+        .face-back {
+            z-index:0;  
+        }
+        #bond-portfolio-description {
+            width:32%;
+            position:relative;
+            float:right;
+        }
+        
+        #performance-figure-table {
+            height: 100px;
+            overflow: hidden;
+            list-style-type: none;
+
+
+        }
+        .performance-figure-title {
+            font-weight:500;
+            font-size:16px;
+            color:grey;
+        }
+        #performance-figure-table li{
+            width:30%;
+            height:100px;
+            display: list-item;
+            float: left;
+            text-align:center;
+            overflow:hidden
+            
+        }
+        .block {
+            display:block;
+        }
+        .portfolio-value {
+            font-size:21px;
+            font-weight:500;
+            margin:10px 0;
+        }
+        .benchmark-value {
+            font-size:14px;
+            display:none;
+        }
+        .names{
+            display:none;
+        }
+
+    </style>
+    
+	<script type="text/javascript">
+		$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
+		$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
+		$(".secondary-nav-analytic").show()
+		$(".secondary-nav-account").hide()
+		$(".secondary-nav-investor").hide()
+		$("#pnav-analytic").addClass("primary-active")
+		$("#snav-risksummary").addClass("secondary-active")
+		$("#navigation-container").css("margin-bottom","50px")
+	</script>
+	
+	<select id="account" name="account" onchange="refresh()">
+		<!--
+		{% if account == "AGCF" %}
+			<option value = "AGCF" selected>ANDROMEDA</option>
+		{% else %}
+			<option value = "AGCF">ANDROMEDA</option>
+		{% endif %}
+		{% if account == "ACPT" %}
+			<option value = "ACPT" selected>ASPEN CREEK</option>
+		{% else %}
+			<option value = "ACPT">ASPEN CREEK</option>
+		{% endif %}
+		{% if account == "INC5" %}
+			<option value = "INC5" selected>BALDR DRACO</option>
+		{% else %}
+			<option value = "INC5">BALDR DRACO</option>
+		{% endif %}
+		{% if account == "INC0" %}
+			<option value = "INC0" selected>BALDR DRACO SERIES B</option>
+		{% else %}
+			<option value = "INC0">BALDR DRACO SERIES B</option>
+		{% endif %}
+		{% if account == "HART" %}
+			<option value = "HART" selected>HARTZ</option>
+		{% else %}
+			<option value = "HART">HARTZ</option>
+		{% endif %}
+		-->
+		{% if account == "PGOF" %}
+			<option value = "PGOF" selected>ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% else %}
+			<option value = "PGOF">ACCOUNT:&nbsp;&nbsp;&nbsp;PERSEUS</option>
+		{% endif %}
+	</select>
+	<br />
+	
+	<table id="top-winners-losers" style="margin-top:10px;width:100%;float:left;">
+		<thead  id="summary1">
+			<tr>
+				<td colspan="4" bgcolor="#949494" style="text-align:center;border-bottom:4px solid #005CB3;border-right:4px solid #005CB3;">BOND</td>
+				<td colspan="4" bgcolor="#949494" style="text-align:center;border-bottom:4px solid #005CB3;">EQUITY</td>
+			</tr>
+			<tr>
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;">Leading Winners</td>
+            	<td style="text-align:center;;border-bottom:2px solid #005CB3;border-right:2px solid #005CB3">DTD Px(%)</td>
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;">Leading Losers</td>
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;border-right:4px solid #005CB3">DTD Px(%)</td> 
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;">Leading Winners</td>
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;border-right:2px solid #005CB3">DTD Px(%)</td>
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;">Leading Losers</td>
+            	<td style="text-align:center;border-bottom:2px solid #005CB3;">DTD Px(%)</td> 
+            </tr>
+		</thead>
+        <tbody>
+            <tr>
+            	<td style="text-align:center;">{{nameList[0]}}</td>
+            	<td style="text-align:center;border-right:2px solid #005CB3">{{pxList[0]}}</td>
+            	<td style="text-align:center;">{{nameList[5]}}</td>
+            	<td style="text-align:center;border-right:4px solid #005CB3;">{{pxList[5]}}</td>
+            	<td style="text-align:center;">{{nameList[6]}}</td>
+            	<td style="text-align:center;border-right:2px solid #005CB3">{{pxList[6]}}</td>
+            	<td style="text-align:center;">{{nameList[11]}}</td>
+            	<td style="text-align:center;">{{pxList[11]}}</td>
+            </tr>
+            <tr>
+            	<td style="text-align:center;">{{nameList[1]}}</td>
+            	<td style="text-align:center;border-right:2px solid #005CB3">{{pxList[1]}}</td>
+            	<td style="text-align:center;">{{nameList[4]}}</td>
+            	<td style="text-align:center;border-right:4px solid #005CB3;">{{pxList[4]}}</td>
+            	<td style="text-align:center;">{{nameList[7]}}</td>
+            	<td style="text-align:center;border-right:2px solid #005CB3">{{pxList[7]}}</td>
+            	<td style="text-align:center;">{{nameList[10]}}</td>
+            	<td style="text-align:center;">{{pxList[10]}}</td>
+            </tr>
+            <tr>
+            	<td style="text-align:center;">{{nameList[2]}}</td>
+            	<td style="text-align:center;border-right:2px solid #005CB3">{{pxList[2]}}</td>
+            	<td style="text-align:center;">{{nameList[3]}}</td>
+            	<td style="text-align:center;border-right:4px solid #005CB3;">{{pxList[3]}}</td>
+            	<td style="text-align:center;">{{nameList[8]}}</td>
+            	<td style="text-align:center;border-right:2px solid #005CB3">{{pxList[8]}}</td>
+            	<td style="text-align:center;">{{nameList[9]}}</td>
+            	<td style="text-align:center;">{{pxList[9]}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+
+    <div id="graph_container1" style="width:50%; height: 500px; margin-bottom:20; float:right; display: inline-block"></div>
+	<div id="graph_container2" style="width:50%; height: 500px; margin-bottom:20; float:left" display: inline-block"></div>
+
+
+<!--
+    
+    <button id="rotate">Rotate</button>
+    <div id="container">
+    <div id="performance-vs-benchmark" class="front face-front">
+        <div id="chart-container"></div>
+        <div id="Performance-figure">
+
+            <ul id="performance-figure-table">
+                <li>
+                    <span class="performance-figure-title">Sharpe Ratio</span>
+                    <span class="block group1">
+                        <span class="fund-name names">Perseus</span>
+                        <span class="portfolio-value value">0.98</span>
+                    </span>
+                    <span class="block group1">
+                        <span class="benchmark-name names">SP500</span>
+                        <span class="benchmark-value value">0.80</span>
+                    </span>
+                    <span class="block group1">
+                        <span class="benchmark-name names">EMBI</span>
+                        <span class="benchmark-value value">0.77</span>
+                    </span>
+                    
+
+                </li>
+
+                <li>
+                    <span class="performance-figure-title">Volatility</span>
+                    <span class="block group1">
+                        <span class="fund-name names">Perseus</span>
+                        <span class="portfolio-value value">0.98</span>
+                    </span>
+                    <span class="block group1">
+                        <span class="benchmark-name names">SP500</span>
+                        <span class="benchmark-value value">0.80</span>
+                    </span>
+                    <span class="block group1">
+                        <span class="benchmark-name names">EMBI</span>
+                        <span class="benchmark-value value">0.77</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="performance-figure-title">Correlation</span>
+                    <span>Perseus</span>
+                    <span>0.98</span>
+                    <span>SP500</span><span>0.8</span>
+                    <span>EMBI</span> <span>0.77</span>
+                </li>
+            </ul>
+
+
+        </div>
+    </div>
+    
+    
+
+    <div id="portfolio-risk-exposure" class="back face-back" >
+    </div>
+    </div>
+    <div id="bond-portfolio-description">
+    <div id="bond-portfolio-description-title" class="infor-box title">Bond Portfolio Description</div>
+        <table id="bond-portfolio-table">
+            <tbody>
+                <tr><td>Bond Portfolio</td><td></td> </tr>
+                <tr><td>Par Value</td><td>0.98</td> </tr>
+                <tr><td>Accrued Interest</td><td>0.8</td></tr>
+                <tr><td>Market Value</td><td>0.77</td></tr>
+                <tr><td>Estimated Annual Income</td><td>8%</td></tr>
+                <tr><td># of Position</td><td>20%</td></tr>
+                <tr><td>Average Coupon Rate</td><td>3%</td></tr>
+                <tr><td>Average Maturity</td><td></td></tr>
+                <tr><td>Average Duration</td><td>20%</td></tr>
+                <tr><td>Average Yield</td><td>3%</td></tr>
+                <tr><td>Average Rating</td><td>3%</td></tr>
+            </tbody>
+        </table>
+        </div>
+    -->
+        
+
+    
+    <script type="text/javascript">
+    
+    /*
+            var myChart = echarts.init(document.getElementById('chart-container'));
+            var dates = ['04/30/2016', '5/31/2016', '6/30/2016', '7/31/2016', '8/31/2016', '9/30/2016', '10/31/2016', '11/30/2016', '12/31/2016', '1/31/2017', '2/28/2017', '3/31/2017', '4/30/2017', '5/31/2017', '6/30/2017', '7/31/2017', '8/31/2017', '9/30/2017', '10/31/2017', '11/30/2017', '12/31/2017', '1/31/2018', '2/28/2018', '3/31/2018', '4/30/2018', '5/31/2018']
+
+            var pgof_cum_return = [1, 1.0220, 1.0234, 1.0396, 1.0558, 1.1026, 1.0805, 1.1112, 1.1056, 1.1378, 1.1400, 1.1222, 1.1607, 1.1496, 1.1567, 1.1517, 1.1699, 1.1936, 1.2135, 1.2052, 1.2554, 1.2950, 1.2611, 1.2917, 1.2980, 1.2418]
+            var spx_cum_return = [1, 1.017957245, 1.020596045, 1.058223338, 1.059709965, 1.059908029, 1.040574776, 1.079112609, 1.10044168, 1.121312871, 1.165838158, 1.167196086, 1.179183802, 1.195777898, 1.203241666, 1.22798369, 1.231743878, 1.257151979, 1.286487316, 1.325943328, 1.340685608, 1.417444926, 1.365203873, 1.330508531, 1.335613813]
+            var embi_cum_return = [1, 0.995197558, 1.040616818, 1.049563833, 1.068049945, 1.072983961, 1.05143218, 1.00265779, 1.015920424, 1.030682999, 1.050721682, 1.054274173, 1.077036433, 1.083720379, 1.079588964, 1.084062471, 1.104864282, 1.103666961, 1.102206492, 1.093233162, 1.100127627, 1.094575214, 1.070194598, 1.077733774, 1.061194953]
+            var option = {
+                title: {
+                    text: 'Performance vs Benchmark'
+                },
+                tooltip: {},
+                legend: {
+                    data: ['Perseus', 'SP500', 'EMBI']
+                },
+                xAxis: {
+                    data: dates,
+                    type: 'category',
+                },
+                yAxis: {
+                    min: 0.8,
+                },
+                series: [{
+                    name: 'Perseus',
+                    type: 'line',
+                    smooth: true,
+                    data: pgof_cum_return
+                },
+                {
+                    name: 'SP500',
+                    type: 'line',
+                    smooth: true,
+                    data: spx_cum_return
+                }, {
+                    name: 'EMBI',
+                    type: 'line',
+                    smooth: true,
+                    data: embi_cum_return
+                }]
+            };
+
+            myChart.setOption(option);
+*/
+
+
+        var Portfolio_data = {{bondConstituteList|safe}}
+        var Portfolio_data2 = {{eqtyConstituteList|safe}}
+
+        Highcharts.getOptions().colors.splice(0, 0, 'transparent');
+        Highcharts.chart('graph_container2', {
+
+            chart: {
+                height: '100%'
+            },
+	        title: {
+				text: 'Bond Portfolio Performance'
+	        },
+            credits: {
+				enabled: false
+			},            
+            series: [{
+                type: "sunburst",
+                data: Portfolio_data,
+                size: '100%',
+                allowDrillToNode: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    format: '{point.name}<br/>{point.Performance}',
+                    filter: {
+                        property: 'innerArcLength',
+                        operator: '>',
+                        value: 16
+                    },
+
+                },
+
+                levels: [{
+                    level: 1,
+                    levelIsConstant: false,
+                    dataLabels: {
+                        filter: {
+                            property: 'outerArcLength',
+                            operator: '>',
+                            value: 64
+                        },
+                        style:{
+                    		fontSize: '13px',
+                    	},
+                    },
+                    levelSize:{
+                    	unit: 'pixels',
+                		value: 60
+                    },
+                }, {
+                    level: 2,
+                    color:"green",
+                    negativeColor:"red",
+                    levelSize:{
+                    	unit: 'weight',
+                		value: 7
+                    },
+                },
+                {
+                    level: 3,
+                    colorVariation: {
+                        key: 'brightness',
+                        to: -0.5
+                    },
+                    levelSize:{
+                    	unit: 'weight',
+                		value: 3
+                    },
+                }]
+
+            }],
+            tooltip: {
+                headerFormat: "",
+                pointFormat: 'The return of <b>{point.name}</b> is <b>{point.Performance}</b>'
+            }
+        });
+        
+        
+        // right side chart
+        Highcharts.chart('graph_container1', {
+
+            chart: {
+                height: '100%'
+            },
+	        title: {
+				text: 'Equity Portfolio Performance'
+	        },
+            credits: {
+				enabled: false
+			},            
+            series: [{
+                type: "sunburst",
+                data: Portfolio_data2,
+                size: '100%',
+                allowDrillToNode: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    format: '{point.name}<br/>{point.Performance}',
+                    filter: {
+                        property: 'innerArcLength',
+                        operator: '>',
+                        value: 16
+                    },
+
+                },
+
+                levels: [{
+                    level: 1,
+                    levelIsConstant: false,
+                    dataLabels: {
+                        filter: {
+                            property: 'outerArcLength',
+                            operator: '>',
+                            value: 64
+                        },
+                        style:{
+                    		fontSize: '11px',
+                    	},
+                    },
+                    levelSize:{
+                    	unit: 'pixels',
+                		value: 60
+                    },
+                }, {
+                    level: 2,
+                    color:"green",
+                    negativeColor:"red",
+                    levelSize:{
+                    	unit: 'weight',
+                		value: 7
+                    },
+                },
+                {
+                    level: 3,
+                    colorVariation: {
+                        key: 'brightness',
+                        to: -0.5
+                    },
+                    levelSize:{
+                    	unit: 'weight',
+                		value: 3
+                    },
+                }]
+
+            }],
+            tooltip: {
+                headerFormat: "",
+                pointFormat: 'The return of <b>{point.name}</b> is <b>{point.Performance}</b>'
+            }
+        });
+        
+
+
+        $("#portfolio-risk-exposure").css("transform", "RotateY(-180deg)")
+
+    </script>
+    <script type="text/javascript">
+        $("#rotate").click(function () {
+            $("#container").css("perspective","1000px")
+            if ($("#performance-vs-benchmark").hasClass("face-front")) {
+                $("#performance-vs-benchmark").css("transform", "RotateY(180deg)")
+                $("#portfolio-risk-exposure").css("transform", "RotateY(0deg)")
+                
+                $("#performance-vs-benchmark").removeClass("face-front")
+                $("#performance-vs-benchmark").addClass("face-back")
+                $("#portfolio-risk-exposure").removeClass("face-back")
+                $("#portfolio-risk-exposure").addClass("face-front")
+                
+            } else {
+                if ($("#performance-vs-benchmark").hasClass("face-back")) {
+                    $("#performance-vs-benchmark").css("transform", "RotateY(0deg)")
+                    $("#portfolio-risk-exposure").css("transform", "RotateY(-180deg)")
+                    $("#performance-vs-benchmark").removeClass("face-back")
+                    $("#performance-vs-benchmark").addClass("face-front")
+                    $("#portfolio-risk-exposure").removeClass("face-front")
+                    $("#portfolio-risk-exposure").addClass("face-back")
+
+                }
+            }
+           /* if ($("#performance-vs-benchmark").hasClass("back")) {
+
+            }
+            */
+            /*
+            $("#performance-vs-benchmark").css("transform", "rotateY(180deg)")
+            $("#performance-vs-benchmark").css("visibility", "hidden")
+            $("#performance-vs-benchmark").css("backface-visibility", "hidden")
+            $("#performance-vs-benchmark").css("transition", "all 0.36s ease-out")
+            */
+        })
+    </script>
+
+    <script type="text/javascript">
+        $(".group1").mouseover(function () {
+            $(".names").show()
+            $(".benchmark-value").show()
+        })
+        $(".group1").mouseleave(function () {
+            $(".names").hide();
+            $(".benchmark-value").hide()
+        })
+    </script>
+
+{% endblock %}

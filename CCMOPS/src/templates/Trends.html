@@ -1,0 +1,141 @@
+<!-- extend base layout -->
+{% extends "base.html" %}
+{% block content %}
+
+    <title></title>
+	<meta charset="utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <style></style>
+    <script type="text/javascript">
+		$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
+		$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
+		$(".secondary-nav-risk").show()
+		$(".secondary-nav-account").hide()
+		$(".secondary-nav-investor").hide()
+		$("#pnav-analytic").addClass("primary-active")
+		$("#snav-risksummary").addClass("secondary-active")
+		$("#snav-trend").addClass("secondary-active")
+		$("#navigation-container").css("margin-bottom","50px")
+	</script>
+	
+	<div id="graph_container" style=" width:800px; height:800px;  margin:auto;"></div>
+	<script type="text/javascript">
+	var trendList = {{trendList|safe}}
+	
+	$(function(){
+		var chart =  new Highcharts.chart('graph_container', {
+            chart: {
+                type:'scatter',
+                zoomType:'xy'
+            },
+	        title: {
+				text: 'Portfolio Trending'
+	        },
+            credits: {
+				enabled: false
+			}, 
+			xAxis:{
+				title:{
+					enable:true,
+					text: 'Previous Price Change(%)'
+				},
+				min: -3.0,
+				max: 3.0,
+				startOnTick:true,
+				endOnTick:true,
+				showLastLabel:true
+			},
+			yAxis:{
+				title:{
+					enable:true,
+					text: 'Last Price Change(%)'
+				},
+				min: -3.0,
+				max: 3.0,
+				startOnTick:true,
+				endOnTick:true,
+				showLastLabel:true
+			},
+			legend:{
+				layout:'vertical',
+				align:'left',
+				verticalAlign:'top',
+				x:80,
+				y:52,
+				floating:true,
+				backgroundColor:'rgb(255,255,255,0.8)',
+				borderWidth:1
+			},
+			plotOption:{
+				scatter:{
+					marker:{
+						radius:5,
+						states:{
+							hover:{
+								enabled:true,
+								lineColor:'rgb(100,100,100)'
+							}
+						}
+					},
+					states:{
+						hover:{
+							marker:{
+								enabled:false
+							}
+						}
+					},
+				}
+			},   
+			tooltip:{ 
+				formatter: function(){
+					return '<b>'+this.point.description+'</b><br>'+this.series.name+'<br><br> Previous PX change: <b>'+ this.x + '%</b><br> Last PX change: <b>'+ this.y +'%</b>'
+				} 
+			},       
+            series: trendList,
+        },function(chart){
+        	var width = chart.plotWidth/2.0;
+        	var height = chart.plotHeight/2.0 +1;
+        	chart.renderer.rect(chart.plotLeft,                      
+		                            chart.plotTop, width, height, 1)
+		            .attr({
+		                fill: 'rgba(69,77,0,0.2)',
+		                zIndex: 0
+		            })
+		            .add();
+		    chart.renderer.rect(chart.plotLeft+width,                      
+		                            chart.plotTop, width, height, 1)
+		            .attr({
+		                fill: 'rgba(0,77,0,0.2)',
+		                zIndex: 0
+		            })
+		            .add();
+		     chart.renderer.rect(chart.plotLeft,                      
+		                            chart.plotTop+height, width, height, 1)
+		            .attr({
+		                fill: 'rgba(77,0,0,0.2)',
+		                zIndex: 0
+		            })
+		            .add();
+		     chart.renderer.rect(chart.plotLeft+width,                      
+		                            chart.plotTop+height, width, height, 1)
+		            .attr({
+		                fill: 'rgba(77,41,0,0.2)',
+		                zIndex: 0
+		            })
+		            .add();
+        });
+	})
+
+	
+	</script>
+
+
+
+
+
+
+{% endblock %}

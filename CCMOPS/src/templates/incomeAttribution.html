@@ -1,0 +1,817 @@
+<!-- extend base layout -->
+{% extends "base.html" %}
+{% block content %}
+
+<meta charset="utf-8" />
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src='../static/jquery.min.js'></script>
+<script src='../static/moment.min.js'></script>
+<script src="https://d3js.org/d3.v5.js"></script>
+<script src="../static/tableToExcel.js"></script>
+
+<style>
+	body {
+		font: 13px Helvetica;
+	}
+	h4{
+		font-size: 16px;
+    	font-weight: bold;
+    	font: 13px Helvetica;
+	}
+
+	table{
+		border-collapse: collapse;
+		border: 4px solid #005CB3;
+	}
+	#income-attribution-list-header {
+        text-align:center;
+        border-top: 4px solid #005CB3;
+        height: 30px;
+    }
+
+
+	#income-attribution-list-header tr td{
+		border-bottom: 1px solid #BFBFBF;
+		padding: 0 10px;
+		font-weight:700;
+		height: 40px;
+		text-align:center;
+	}
+	
+	.income-attribution-list tr td{
+		height: 41px;
+		padding: 0 10px;
+		height: 30px;
+	}
+	.income-attribution-list tr:hover{
+		background-color:#f5f5f5;
+	}
+	.groupheader-row {
+		border-top: 2px solid #005CB3;
+	}
+	.expandcollapse {
+		display:inline-block;
+		margin-left:5px;
+		margin-right:5px;
+		width:15px;
+		text-align:center;
+		background-color: #0066CC;
+		color: white;
+		text-decoration: none;
+	}
+	.groupheader-row tr{
+		padding: 0 15px;
+		height: 40px;
+	}
+	.groupheader-row tr td h4{
+		font-size: 16px;
+		
+		display: inline
+	}
+	.footer-row {
+		border-bottom: 2px solid #005CB3;
+	}
+	.sort{
+        	cursor:pointer;
+    }
+    #income-attribution-list-footer{
+    	font-weight: 700;
+    }
+    #grouping-method{
+    	float:left;
+    	margin-bottom:20px;    
+    }
+    #date-filter{
+    	float:right;
+    	display:inline-block;
+    	height:30px;
+    	margin-bottom:20px;
+    }
+    .positive-color-coding {
+		color:#15b607;
+        font-weight:500;
+    }
+	.negative-color-coding {
+         color:#e30606;
+         font-weight:500;
+    }
+    .activated-report-switch{
+    	background-color:#008a00;
+    	color:white;
+    	font-weight:700;
+    	border:1px;
+    	padding:4px;
+    	margin-left:3px;
+    	float:right;
+    	width:50px;
+    	cursor:pointer;
+    }
+    .deactivated-report-switch{
+    	background-color:#A8A8A8;
+    	color:white;
+    	font-weight:700;
+    	border:1px;
+    	padding:4px;
+    	margin-left:3px;
+    	float:right;
+    	width:50px;
+    	cursor:pointer;
+    }
+</style>
+
+<script type="text/javascript">
+	function refresh()
+	{
+		var i = document.getElementById("account").value;
+		var j = document.getElementById("group").value;
+	    window.location.replace("/op?account=" + i + "&group=" + j);
+	}
+	$(".primary-nav-list").children("li").children("h2").removeClass("primary-active")
+	$(".secondary-nav-list").children("li").children("h3").removeClass("secondary-active")
+	$(".secondary-nav-account").show()
+	$(".secondary-nav-investor").hide()
+	$(".secondary-nav-analytic").hide()
+	$("#pnav-account").addClass("primary-active")
+	$("#snav-incomeattr").addClass("secondary-active")
+	$("#navigation-container").css("margin-bottom","50px")
+</script>
+
+	<select autofocus id="grouping-method">
+		<option value="all" >GROUP BY:   ALL</option>
+		<option value="category" selected>GROUP BY:   CATEGORY</option>
+		<option value="country" >GROUP BY:   COUNTRY</option>
+	</select>
+	
+	<input type="button" id="income-attribution-ytd-switch" value="YTD" class="activated-report-switch"/>
+	<input type="button" id="income-attribution-mtd-switch" value="MTD" class="deactivated-report-switch"/>
+	<input type="button" id="income-attribution-dtd-switch" value="DTD" class="deactivated-report-switch"/>
+	<!--
+	<input type="button" id="table-control" value ='+' style='background-color:#037dae;color:white;font-weight:700;width:10px;border:1px;' />
+	-->
+	<input type="image" id="table-control" value='EXPAND' src='../static/down.png' />
+	<a id="dlink" style="display:none;"></a>
+	<input type="image" src="../static/excel-label.png" onclick="tableToExcel('income-attribution-report', 'Income Attributions', 'incomeAttributions.xls')" value="DOWNLOAD"/>
+
+    <div id="income-attribution-container">
+        <table id="income-attribution-report">
+            <thead id="income-attribution-list-header">
+                <tr>
+                    <td class="sort" data-sort="security">Issuer</td>
+                    <td class="sort" data-sort="type">Security Type</td>
+                    <td class="sort" data-sort="country">Country</td>
+                    <td class="sort" data-sort="coupon">Coupon</td>
+                    <td class="sort" data-sort="maturity">Maturity</td>
+                    <td class="sort" data-sort="currency">Currency</td>
+                    <td class="sort" data-sort="price-change">Price Change</td>
+                    <td class="sort" data-sort="fx-change">FX Change</td>
+                    <td class="sort" data-sort="interest-earned">Interest Earned</td>
+                    <td class="sort" data-sort="total-income">Total</td>
+                    <td class="sort" data-sort="percentage-attr">% Attr</td>
+                    <td class="sort" data-sort="percentage-gl">% G/L</td>
+                    <td class="sort" data-sort="isin">ISIN</td>
+                </tr>
+            </thead>
+            <!-- Account total -->
+            <tfoot id="income-attribution-list-footer">
+                <tr>
+                    <td>Account Total</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td id="account-pxchange-total" style="text-align:right; padding:0 10px"></td>
+                    <td id="account-fxchange-total" style="text-align:right; padding:0 10px"></td>
+                    <td id="account-interest-earned-total" style="text-align:right; padding:0 10px"></td>
+                    <td id="account-total-income-total" style="text-align:right; padding:0 10px"></td>
+                    <td style="text-align:right; padding:0 10px">100%</td>
+                    <td style="text-align:right; padding:0 10px" >0%</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+        <table id ="sorting-header-row-temp" style="display:none"></table>
+		<table id ="sorting-details-temp" style="display:none"></table>
+		<table id ="sorting-footer-row-temp" style="display:none"></table>
+    </div>
+
+    <script>
+        var sortMethod = "ascend";
+    	
+        $(document).ready(function () {
+            var incomeAttributionList0_dtd = {{returnList|safe}}
+            var incomeAttributionList0_mtd = {{returnListMTD|safe}}
+            var incomeAttributionList0_ytd = {{returnListYTD|safe}}
+            var sumTotalGain_dtd = 0; sumTotalGain_mtd = 0;  sumTotalGain_ytd = 0; sumTotalLoss_dtd = 0;sumTotalLoss_mtd = 0; sumTotalLoss_ytd = 0; sumTotalIncome_dtd = 0;sumTotalIncome_mtd = 0; sumTotalIncome_ytd =0;
+			var currentActivatedReport  ='ytd';
+            
+                    	var category_mapping = { 
+        						'ALL':'ALL',
+        						'BOND':'BOND',
+        						'EQTY':'EQUITY',
+        						'REPO':'REPO',
+        						'FUT':'FUTURE',
+        						'FX':'FORWARD',
+        						'CDS':'CDS',
+        						'OPTION':'OPTION',
+        						'CASH':'CASH',
+        						'AR':'Argentina', 
+        						'DE':'Germany',
+        						'GR':'Greece', 
+        						'PH':'Philippines', 
+        						'BR':'Brazil', 
+        						'VE':'Venezuela', 
+        						'UA':'Ukraine',
+        						'US':'United-States',
+        						'RU':'Russia',
+        						'KZ':'Kazakhstan',
+        						'GB':'United-Kingdom',
+        						'NL':'Netherlands',
+        						'CH':'Switzerland',
+        						'IL':'Israel',
+        						'EC':'Ecuador',
+        						'EG':'Egypt',
+        						'NG':'Nigeria',
+        						'JP':'Japan',
+        						'AT':'Austria',
+        						'CA':'Canada',
+        						'CI':'Ivory-Coast',
+        						'CR':'Costa-Rica',
+        						'PE':'Peru',
+        						'PR':'Puerto-Rico',
+        						'VN':'Vietnam',
+        						'PA':'Panama',
+        						'SA':'Saudi-Arabia',
+        						'TR':'Turkey',
+        						'MX':'Mexico',
+        						'UY':'Uruguay',
+        						'KE':'Kenya',
+        						'IT':'Italy',
+        						'OTHERS':'Others',
+        						'USD':'USD',
+        						'EUR':'EUR',
+        						'ARS':'ARS',
+        						'GBP':'GBP' }
+
+ 
+            for (ii = 0; ii < incomeAttributionList0_dtd[0].details.length ; ii++) {
+            	if(incomeAttributionList0_dtd[0].details[ii].Total >= 0){
+            		sumTotalGain_dtd += incomeAttributionList0_dtd[0].details[ii].Total
+            	}else{
+            		sumTotalLoss_dtd += incomeAttributionList0_dtd[0].details[ii].Total
+            	}
+            	if(incomeAttributionList0_dtd[0].details[ii].Type == "BOND (defaulted)"){
+            		incomeAttributionList0_dtd[0].details[ii].Type = "BOND"
+            		incomeAttributionList0_dtd[0].details[ii].Class = "BOND-defaulted"
+            	}
+            	if(incomeAttributionList0_dtd[0].details[ii].Type == "CALL" || incomeAttributionList0_dtd[0].details[ii].Type == "PUT"){
+            		incomeAttributionList0_dtd[0].details[ii].Type = "OPTION"
+            	}
+            	
+            	if(incomeAttributionList0_dtd[0].details[ii].Country == ""){
+            		incomeAttributionList0_dtd[0].details[ii].Country = "REPO"
+            	}
+            }
+            for (ii = 0; ii < incomeAttributionList0_ytd[0].details.length ; ii++) {
+            	if(incomeAttributionList0_ytd[0].details[ii].Total >= 0){
+            		sumTotalGain_ytd += incomeAttributionList0_ytd[0].details[ii].Total
+            	}else{
+            		sumTotalLoss_ytd += incomeAttributionList0_ytd[0].details[ii].Total
+            	}
+            	incomeAttributionList0_ytd[0].details[ii].Class = incomeAttributionList0_ytd[0].details[ii].Type
+            	if(incomeAttributionList0_ytd[0].details[ii].Type == "BOND (defaulted)"){
+            		incomeAttributionList0_ytd[0].details[ii].Type = "BOND"
+            		incomeAttributionList0_ytd[0].details[ii].Class = "BOND-defaulted"
+            	}
+            	if(incomeAttributionList0_ytd[0].details[ii].Type == "CALL" || incomeAttributionList0_ytd[0].details[ii].Type == "PUT"){
+            		incomeAttributionList0_ytd[0].details[ii].Type = "OPTION"
+            	}
+            	if(incomeAttributionList0_ytd[0].details[ii].Country == ""){
+            		incomeAttributionList0_ytd[0].details[ii].Country = "REPO"
+            	}
+            }
+            for (ii = 0; ii < incomeAttributionList0_mtd[0].details.length ; ii++) {
+            	if(incomeAttributionList0_mtd[0].details[ii].Total >= 0){
+            		sumTotalGain_mtd += incomeAttributionList0_mtd[0].details[ii].Total
+            	}else{
+            		sumTotalLoss_mtd += incomeAttributionList0_mtd[0].details[ii].Total
+            	}
+            	incomeAttributionList0_mtd[0].details[ii].Class = incomeAttributionList0_mtd[0].details[ii].Type
+            	if(incomeAttributionList0_mtd[0].details[ii].Type == "BOND (defaulted)"){
+            		incomeAttributionList0_mtd[0].details[ii].Type = "BOND"
+            		incomeAttributionList0_mtd[0].details[ii].Class = "BOND-defaulted"
+            	}
+            	if(incomeAttributionList0_mtd[0].details[ii].Type == "CALL" || incomeAttributionList0_ytd[0].details[ii].Type == "PUT"){
+            		incomeAttributionList0_mtd[0].details[ii].Type = "OPTION"
+            	}
+            	if(incomeAttributionList0_mtd[0].details[ii].Country == ""){
+            		incomeAttributionList0_mtd[0].details[ii].Country = "REPO"
+            	}
+            }
+            
+            sumTotalIncome_dtd = sumTotalGain_dtd+sumTotalLoss_dtd
+            sumTotalIncome_mtd = sumTotalGain_mtd+sumTotalLoss_mtd
+            sumTotalIncome_ytd = sumTotalGain_ytd+sumTotalLoss_ytd
+            
+            for (ii = 0; ii < incomeAttributionList0_dtd.length ; ii++) {
+                for (jj = 0; jj < incomeAttributionList0_dtd[ii].details.length; jj++) {
+                    incomeAttributionList0_dtd[ii].details[jj].PercentageAttr = incomeAttributionList0_dtd[ii].details[jj].Total / sumTotalIncome_dtd * 100;
+                    if(incomeAttributionList0_dtd[ii].details[jj].Total >= 0){
+            			incomeAttributionList0_dtd[ii].details[jj].PercentageGL = incomeAttributionList0_dtd[ii].details[jj].Total / sumTotalGain_dtd * 100;
+            		}else{
+            			incomeAttributionList0_dtd[ii].details[jj].PercentageGL = -1 * incomeAttributionList0_dtd[ii].details[jj].Total / sumTotalLoss_dtd * 100;
+            		}
+                }
+            }
+            for (ii = 0; ii < incomeAttributionList0_mtd.length ; ii++) {
+                for (jj = 0; jj < incomeAttributionList0_mtd[ii].details.length; jj++) {
+                    incomeAttributionList0_mtd[ii].details[jj].PercentageAttr = incomeAttributionList0_mtd[ii].details[jj].Total / sumTotalIncome_mtd * 100;
+                    if(incomeAttributionList0_mtd[ii].details[jj].Total >= 0){
+            			incomeAttributionList0_mtd[ii].details[jj].PercentageGL = incomeAttributionList0_mtd[ii].details[jj].Total / sumTotalGain_mtd * 100;
+            		}else{
+            			incomeAttributionList0_mtd[ii].details[jj].PercentageGL = -1 * incomeAttributionList0_mtd[ii].details[jj].Total / sumTotalLoss_mtd * 100;
+            		}
+                }
+            }
+            for (ii = 0; ii < incomeAttributionList0_ytd.length ; ii++) {
+                for (jj = 0; jj < incomeAttributionList0_ytd[ii].details.length; jj++) {
+                    incomeAttributionList0_ytd[ii].details[jj].PercentageAttr = incomeAttributionList0_ytd[ii].details[jj].Total / sumTotalIncome_ytd * 100;
+                    if(incomeAttributionList0_ytd[ii].details[jj].Total >= 0){
+            			incomeAttributionList0_ytd[ii].details[jj].PercentageGL = incomeAttributionList0_ytd[ii].details[jj].Total / sumTotalGain_ytd * 100;
+            		}else{
+            			incomeAttributionList0_ytd[ii].details[jj].PercentageGL = -1 * incomeAttributionList0_ytd[ii].details[jj].Total / sumTotalLoss_ytd * 100;
+            		}
+                }
+            }
+            
+            incomeAttributionList0_dtd[0].details.sort(function(a, b) {
+				return parseFloat(-1*a.PercentageAttr) - parseFloat(-1*b.PercentageAttr);
+            });
+            incomeAttributionList0_mtd[0].details.sort(function(a, b) {
+				return parseFloat(-1*a.PercentageAttr) - parseFloat(-1*b.PercentageAttr);
+            });
+            incomeAttributionList0_ytd[0].details.sort(function(a, b) {
+				return parseFloat(-1*a.PercentageAttr) - parseFloat(-1*b.PercentageAttr);
+            });
+            
+            var temp = d3.nest().key(function(d) { return d.Type; }).rollup(function(v) { return d3.sum(v, function(d) { return d.Total; }); }).entries(incomeAttributionList0_dtd[0].details);
+            temp.sort(function(a, b) {return d3.ascending(+a.value, +b.value)});
+            var secType_unique_dtd=Array.from(temp, x => x.key)
+            
+			var temp = d3.nest().key(function(d) { return d.Country; }).rollup(function(v) { return d3.sum(v, function(d) { return d.Total; }); }).entries(incomeAttributionList0_dtd[0].details);
+            temp.sort(function(a, b) {return d3.ascending(+a.value, +b.value)});
+            var countryNames_unique_dtd = Array.from(temp, x => x.key)
+            
+            var temp = d3.nest().key(function(d) { return d.Type; }).rollup(function(v) { return d3.sum(v, function(d) { return d.Total; }); }).entries(incomeAttributionList0_mtd[0].details);
+            temp.sort(function(a, b) {return d3.ascending(+a.value, +b.value)});
+            var secType_unique_mtd=Array.from(temp, x => x.key)
+            
+			var temp = d3.nest().key(function(d) { return d.Country; }).rollup(function(v) { return d3.sum(v, function(d) { return d.Total; }); }).entries(incomeAttributionList0_mtd[0].details);
+            temp.sort(function(a, b) {return d3.ascending(+a.value, +b.value)});
+            var countryNames_unique_mtd = Array.from(temp, x => x.key)
+
+            var temp = d3.nest().key(function(d) { return d.Type;}).rollup(function(v) { return d3.sum(v, function(d) { return d.Total; }); }).entries(incomeAttributionList0_ytd[0].details);
+            temp.sort(function(a, b) {return d3.ascending(+a.value, +b.value)});
+            var secType_unique_ytd=Array.from(temp, x => x.key)
+			
+            var temp = d3.nest().key(function(d) { return d.Country; }).rollup(function(v) { return d3.sum(v, function(d) { return d.Total; }); }).entries(incomeAttributionList0_ytd[0].details);
+            temp.sort(function(a, b) {return d3.ascending(+a.value, +b.value)});
+            var countryNames_unique_ytd = Array.from(temp, x => x.key)
+
+ 
+
+            var incomeAttributionList1_dtd = []
+            for(i = 0; i <secType_unique_dtd.length;i++ ){
+				incomeAttributionList1_dtd.push({"Type":category_mapping[secType_unique_dtd[i]],"details":[]})
+                for(j = 0; j <incomeAttributionList0_dtd[0].details.length;j++ ){  
+                	if(incomeAttributionList0_dtd[0].details[j].Type == secType_unique_dtd[i]){
+						incomeAttributionList1_dtd[i].details.push(incomeAttributionList0_dtd[0].details[j])
+                	}
+				}
+            }
+            
+            var incomeAttributionList1_mtd = []
+            for(i = 0; i <secType_unique_mtd.length;i++ ){
+				incomeAttributionList1_mtd.push({"Type":category_mapping[secType_unique_mtd[i]],"details":[]})
+                for(j = 0; j <incomeAttributionList0_mtd[0].details.length;j++ ){  
+                	if(incomeAttributionList0_mtd[0].details[j].Type == secType_unique_mtd[i]){
+						incomeAttributionList1_mtd[i].details.push(incomeAttributionList0_mtd[0].details[j])
+                	}
+				}
+            }
+            
+            var incomeAttributionList1_ytd = []
+            for(i = 0; i <secType_unique_ytd.length;i++ ){
+				incomeAttributionList1_ytd.push({"Type":category_mapping[secType_unique_ytd[i]],"details":[]})
+                for(j = 0; j <incomeAttributionList0_ytd[0].details.length;j++ ){  
+                	if(incomeAttributionList0_ytd[0].details[j].Type == secType_unique_ytd[i]){
+						incomeAttributionList1_ytd[i].details.push(incomeAttributionList0_ytd[0].details[j])
+                	}
+				}
+            }
+
+            updateIncomeAttributionDetails(incomeAttributionList1_ytd)
+            
+            $("#grouping-method").change(function(){
+            	if(currentActivatedReport == 'ytd'){
+            		incomeAttributionList0 = incomeAttributionList0_ytd
+            		secType_unique =secType_unique_ytd
+            		countryNames_unique = countryNames_unique_ytd
+            	}
+            	if(currentActivatedReport == 'mtd'){
+            		incomeAttributionList0 = incomeAttributionList0_mtd
+            		secType_unique =secType_unique_mtd
+            		countryNames_unique = countryNames_unique_mtd
+            	}
+            	if(currentActivatedReport == 'dtd'){
+            		incomeAttributionList0 = incomeAttributionList0_dtd
+            		secType_unique =secType_unique_dtd
+            		countryNames_unique = countryNames_unique_dtd
+            	}
+            
+                var incomeAttributionList1 = []
+                var currentGroupingMethod = $("#grouping-method").val()
+                if(currentGroupingMethod =='all'){
+                    incomeAttributionList1 = incomeAttributionList0
+                }else{
+                    if(currentGroupingMethod =='category'){
+                        for(i = 0; i <secType_unique.length;i++ ){
+                            incomeAttributionList1.push({"Type":category_mapping[secType_unique[i]],"details":[]})
+                            for(j = 0; j <incomeAttributionList0[0].details.length;j++ ){  
+                                if(incomeAttributionList0[0].details[j].Type == secType_unique[i]){
+                                    incomeAttributionList1[i].details.push(incomeAttributionList0[0].details[j])
+                                }
+                            }
+                        }
+                    }else{
+                        if(currentGroupingMethod =='country'){
+                            for(i = 0; i <countryNames_unique.length;i++ ){
+                                incomeAttributionList1.push({"Type":category_mapping[countryNames_unique[i]],"details":[]})
+                                for(j = 0; j <incomeAttributionList0[0].details.length;j++ ){  
+                                    if(incomeAttributionList0[0].details[j].Country == countryNames_unique[i]){
+                                        incomeAttributionList1[i].details.push(incomeAttributionList0[0].details[j])
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                updateIncomeAttributionDetails(incomeAttributionList1)
+            });
+	        $('#income-attribution-ytd-switch').click(function(){
+				if(currentActivatedReport != 'ytd'){
+	            	currentActivatedReport = 'ytd';
+	            	updateIncomeAttributionDetails(incomeAttributionList1_ytd)
+	            	$('#income-attribution-ytd-switch').removeClass('deactivated-report-switch')
+	            	$('#income-attribution-dtd-switch').removeClass('activated-report-switch')
+	            	$('#income-attribution-mtd-switch').removeClass('activated-report-switch')
+	            	$('#income-attribution-ytd-switch').addClass('activated-report-switch')
+	            	$('#income-attribution-dtd-switch').addClass('deactivated-report-switch')
+	            	$('#income-attribution-mtd-switch').addClass('deactivated-report-switch')
+	            	$('#grouping-method').val('category')
+	            }
+	        });
+	        $('#income-attribution-mtd-switch').click(function(){
+				if(currentActivatedReport != 'mtd'){
+	            	currentActivatedReport = 'mtd';
+	            	updateIncomeAttributionDetails(incomeAttributionList1_mtd)
+	            	$('#income-attribution-mtd-switch').removeClass('deactivated-report-switch')
+	            	$('#income-attribution-dtd-switch').removeClass('activated-report-switch')
+	            	$('#income-attribution-ytd-switch').removeClass('activated-report-switch')
+	            	$('#income-attribution-mtd-switch').addClass('activated-report-switch')
+	            	$('#income-attribution-dtd-switch').addClass('deactivated-report-switch')
+	            	$('#income-attribution-ytd-switch').addClass('deactivated-report-switch')
+	            	$('#grouping-method').val('category')
+	            }
+	        });
+	        $('#income-attribution-dtd-switch').click(function(){
+	        	if(currentActivatedReport != 'dtd'){
+	            	currentActivatedReport = 'dtd';
+	            	updateIncomeAttributionDetails(incomeAttributionList1_dtd)
+	            	$('#income-attribution-dtd-switch').removeClass('deactivated-report-switch')
+	            	$('#income-attribution-mtd-switch').removeClass('activated-report-switch')
+	            	$('#income-attribution-ytd-switch').removeClass('activated-report-switch')
+	            	$('#income-attribution-dtd-switch').addClass('activated-report-switch')
+	            	$('#income-attribution-mtd-switch').addClass('deactivated-report-switch')
+	            	$('#income-attribution-ytd-switch').addClass('deactivated-report-switch')
+	            	
+	            	$('#grouping-method').val('category')
+	            }
+			});
+        });
+
+        $(".sort").click(function () {
+        
+        	if (sortMethod == 'ascend'){
+        		sortMethod = 'descend'
+        	}else{
+        		sortMethod = 'ascend'
+        	}
+        	var expandStatus = false;
+			$(".group-expanded").each(function(){
+				if($(this).css('display')=='table-row'){
+					expandStatus = true
+				}
+			})
+			if(expandStatus){
+				var tempSortBase = $(this).attr("data-sort")
+	            var tb = $("#income-attribution-report").children('.income-attribution-list');               
+	            tb.each(function () {
+					var trow = $(this).children('tr')
+					var SortBase = "." +tempSortBase
+	                if (sortMethod == "ascend") {                       
+	                	trow.sort(function (A, B) {
+	                    	if (tempSortBase == "security" || tempSortBase == "currency"|| tempSortBase == "country" || tempSortBase == "type"|| tempSortBase == "isin" ) {
+	                    		var XX = $(A).children(SortBase).text()
+	                        	var YY =$(B).children(SortBase).text()
+	                        	if(XX==""||XX==null){XX="AA"}
+	                        	if(YY==""||YY==null){YY="AA"}
+	                    	} else {
+								if (tempSortBase == "maturity") {
+	                        		var tempXX = $(A).children(SortBase).text().split('/')
+	                            	var tempYY = $(B).children(SortBase).text().split('/')
+	                            	var XX = parseInt(tempXX[2])*10000+parseInt(tempXX[0])*100+parseInt(tempXX[1])
+	                            	var YY = parseInt(tempYY[2])*10000+parseInt(tempYY[0])*100+parseInt(tempYY[1])
+	                            	if(isNaN(XX)){XX=10999999}
+									if(isNaN(YY)){YY=10999999}
+	                        	} else {
+	                    			var XX = unformatNumber($(A).children(SortBase).text())
+	                            	var YY = unformatNumber($(B).children(SortBase).text())
+	                        	}
+	                    	}
+	                    	return ((YY < XX) ? -1 : ((YY > XX) ? 1 : 0));
+						}).appendTo($(this))
+						
+					} else {
+						if (sortMethod == "descend") {
+							trow.sort(function (A, B) {
+								if (tempSortBase == "security" || tempSortBase == "currency" || tempSortBase == "country" || tempSortBase == "type" || tempSortBase == "isin" ) {
+		                    		var XX = $(A).children(SortBase).text()
+		                    		var YY = $(B).children(SortBase).text()
+		                    		if(XX==""||XX==null){XX="ZZ"}
+		                        	if(YY==""||YY==null){YY="ZZ"}
+								} else {
+									if (tempSortBase == "maturity") {
+		                    			var tempXX = $(A).children(SortBase).text().split('/')
+		                        		var tempYY = $(B).children(SortBase).text().split('/')
+		                        		var XX = parseInt(tempXX[2])*10000+parseInt(tempXX[0])*100+parseInt(tempXX[1])
+		                        		var YY = parseInt(tempYY[2])*10000+parseInt(tempYY[0])*100+parseInt(tempYY[1])
+		                        		if(isNaN(XX)){XX=20999999}
+										if(isNaN(YY)){YY=20999999}
+									} else {
+										var XX = unformatNumber($(A).children(SortBase).text())
+		                        		var YY = unformatNumber($(B).children(SortBase).text())
+									}
+								}
+								return ((YY > XX) ? -1 : ((YY < XX) ? 1 : 0));
+							}).appendTo($(this)) 
+						}
+					}
+				});
+			}else{
+				var tempSortBase = $(this).attr("data-sort")
+				if(tempSortBase == 'price-change' || tempSortBase == 'fx-change' || tempSortBase == 'interest-earned'|| tempSortBase == 'total-income'){
+					var SortBase = "." +tempSortBase +'-subtotal'
+					var listOfSortBase = []
+					$('.groupheader-row').each(function(){
+						listOfSortBase.push(unformatNumber($(this).find(SortBase).text()))
+						$(this).appendTo("#sorting-header-row-temp")
+					})
+					$('.income-attribution-list').each(function(){
+						$(this).appendTo("#sorting-details-temp")
+					})
+					$('.footer-row').each(function(){
+						$(this).appendTo("#sorting-footer-row-temp")
+					})
+					rankOfSortBase=Array.from(Array(listOfSortBase.length).keys()).sort((a,b)=>listOfSortBase[a]<listOfSortBase[b]?-1:(listOfSortBase[b]<listOfSortBase[a])|0)
+					if(sortMethod == 'ascend'){
+						for(i=0;i<rankOfSortBase.length;i++){
+							$("#sorting-header-row-temp tbody").eq(rankOfSortBase[i]).clone().appendTo("#income-attribution-report")
+							$("#sorting-details-temp tbody").eq(rankOfSortBase[i]).clone().appendTo("#income-attribution-report")
+							$("#sorting-footer-row-temp tbody").eq(rankOfSortBase[i]).clone().appendTo("#income-attribution-report")
+						};
+						$("#sorting-header-row-temp tbody").remove()
+						$("#sorting-details-temp tbody").remove()
+						$("#sorting-footer-row-temp tbody").remove()
+						$(".collapse-anchor").click(function () {
+							var temp_cate = $('#' + this.id).attr("data-groupid")
+					        $("#" + temp_cate + "-collapse-header").css("display", "none");
+					        $("#" + temp_cate + "-expand-header").css("display", "table-row");
+					        $("#" + temp_cate + "-income-attribution-full-details").css("display", "table-row-group");
+					        $("#" + temp_cate + "-footer-row").css("display", "table-row-group");
+					        delete temp_cate
+					    });
+					    $(".expand-anchor").click(function () {
+					        var temp_cate = $('#' + this.id).attr("data-groupid")
+					        $("#" + temp_cate + "-collapse-header").css("display", "table-row");
+					        $("#" + temp_cate + "-expand-header").css("display", "none");
+					        $("#" + temp_cate + "-income-attribution-full-details").css("display", "none");
+					        $("#" + temp_cate + "-footer-row").css("display", "none");
+					        delete temp_cate
+					    });
+					}else{
+						for(i=rankOfSortBase.length-1;i>=0;i--){
+							$("#sorting-header-row-temp tbody").eq(rankOfSortBase[i]).clone().appendTo("#income-attribution-report")
+							$("#sorting-details-temp tbody").eq(rankOfSortBase[i]).clone().appendTo("#income-attribution-report")
+							$("#sorting-footer-row-temp tbody").eq(rankOfSortBase[i]).clone().appendTo("#income-attribution-report")
+						};
+						$("#sorting-header-row-temp tbody").remove()
+						$("#sorting-details-temp tbody").remove()
+						$("#sorting-footer-row-temp tbody").remove()
+						$(".collapse-anchor").click(function () {
+							var temp_cate = $('#' + this.id).attr("data-groupid")
+					        $("#" + temp_cate + "-collapse-header").css("display", "none");
+					        $("#" + temp_cate + "-expand-header").css("display", "table-row");
+					        $("#" + temp_cate + "-income-attribution-full-details").css("display", "table-row-group");
+					        $("#" + temp_cate + "-footer-row").css("display", "table-row-group");
+					        delete temp_cate
+					    });
+					    $(".expand-anchor").click(function () {
+					        var temp_cate = $('#' + this.id).attr("data-groupid")
+					        $("#" + temp_cate + "-collapse-header").css("display", "table-row");
+					        $("#" + temp_cate + "-expand-header").css("display", "none");
+					        $("#" + temp_cate + "-income-attribution-full-details").css("display", "none");
+					        $("#" + temp_cate + "-footer-row").css("display", "none");
+					        delete temp_cate
+					     });
+					}
+				}
+                
+            }
+        });
+
+        function formatNumber(num) { //add thousand seperator
+            return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
+        };
+
+        function unformatNumber(str) { //replace thousand seperator
+            if (/%$/.test(str)) { str.replace("%", "") }
+            var temp = str
+            temp = str.replace(/,/g, "")
+            num = parseFloat(temp)
+            return num
+        };
+        function updateIncomeAttributionDetails(incomeAttributionList){
+        	$("#income-attribution-report tbody").remove()
+        	var sum_account_pxchange = 0, sum_account_interestearned = 0, sum_account_fxchange = 0, sum_account_totalincome=0;
+            for (i = 0; i < incomeAttributionList.length; i++) {
+                
+                var temp_class = incomeAttributionList[i].Type
+                var temp_Category = incomeAttributionList[i].Type
+                var temp_tbody_headerline = "<tbody class=\"" + temp_class + " groupheader-row\" id=\"" + temp_class + "-header-row\">"
+                var temp_tr = "<tr class=\"group-collapsed collapse-header\" id=" + temp_class + "-collapse-header><td class=\"grouping wrappable\" colspan=\"1\">"
+                var temp_control_button = "<a href=\"javascript:void(0)\"; class= \"expandcollapse collapse-anchor\" id=\"" + temp_class + "-expand-icon\" data-groupid=\"" + temp_class + "\" data-fundName=\"Perseus\"><span class=\"sr-only\">+</span></a><h4 class=\"type-name\">" + temp_Category + "</h4></td>"
+                var temp_title_collapse = "<td></td><td></td><td></td><td></td><td></td><td class=\"" + temp_class + "-price-change-subtotal price-change-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-fx-change-subtotal fx-change-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-interest-earned-subtotal interest-earned-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-total-income-subtotal total-income-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-percentage-attr-subtotal percentage-attr-subtotal\"  style=\"text-align: right; padding: 0 10px\"></td><td class=\"" + temp_class + "-percentage-gl-subtotal percentage-gl-subtotal\"  style=\"text-align: right; padding: 0 10px\"></td><td></td></tr>"
+                var temp_tr2 = "<tr class=\"group-expanded expand-header\" id=\"" + temp_class + "-expand-header\" style=\"display:none\"><td class=\"grouping wrappable\" colspan=\"1\">"
+                var temp_control_button2 = "<a href=\"javascript:void(0);\" class=\"expandcollapse expand-anchor\" id=\"" + temp_class + "-collapse-icon\" data-groupid=\"" + temp_class + "\" data-fundName=\"Perseus\">"
+                var temp_title_expand = "<span class=\"sr-only\">-</span></a><h4 class=\"type-name\">" + temp_Category + "</h4></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+
+
+                $("#income-attribution-report").append(temp_tbody_headerline + temp_tr + temp_control_button + temp_title_collapse + temp_tr2 + temp_control_button2 + temp_title_expand + "</tbody>")
+                var temp_detail_income_attribution_id = temp_class + "-income-attribution-full-details"
+                var temp_tbody_container = "<tbody class=\"income-attribution-list\" id=\"" + temp_detail_income_attribution_id + "\" style=\"display:none\">"
+                var temp_detail_keys = Object.keys(incomeAttributionList[i].details)
+                var temp_tbody_content = "";
+                for (j = 0; j < temp_detail_keys.length; j++) {
+                    //console.log(positionList[Object.keys(positionList)[i]].details[j].Issuer)
+                    var tempsecurityname = incomeAttributionList[i].details[j].SecurityName
+                    var temptype = incomeAttributionList[i].details[j].Class
+                    var tempcountry = incomeAttributionList[i].details[j].Country
+                    var tempcoupon = incomeAttributionList[i].details[j].Coupon
+                    var tempmaturity = incomeAttributionList[i].details[j].Maturity
+                    var tempcurrency = incomeAttributionList[i].details[j].Currency
+
+                    var temppricechange = incomeAttributionList[i].details[j].PriceChange
+                    var tempinterestearned = incomeAttributionList[i].details[j].InterestEarned
+                    var tempfxchange = incomeAttributionList[i].details[j].FXChange
+                    var temppricefxinteract = incomeAttributionList[i].details[j].PriceFXInteraction
+                    var temptotalincome = incomeAttributionList[i].details[j].Total
+                    var temppercentageattr = incomeAttributionList[i].details[j].PercentageAttr
+                    var temppercentagegl = incomeAttributionList[i].details[j].PercentageGL
+                    var tempisin = incomeAttributionList[i].details[j].ISIN
+
+                    temp_tbody_content = temp_tbody_content + "<tr><td class=\"security\" data-x=\"" + i + "\" data-y=\"" + j + "\" style=\"text-align: center\">" + tempsecurityname + "</td><td class=\"type\" style=\"text-align: center\">" + temptype + "</td><td class=\"country\" style=\"text-align: center\">" + tempcountry + "</td><td class=\"coupon\" style=\"text-align: right\">" + tempcoupon.toFixed(2) + "</td><td class=\"maturity\" style=\"text-align: right\">" + tempmaturity + "</td><td class=\"currency\" style=\"text-align: center\">" + tempcurrency + "</td><td  class=\"" + temp_class + "-price-change price-change color-coding\" style=\"text-align: right\">" + formatNumber(temppricechange.toFixed(0)) + "</td><td  class=\"" + temp_class + "-fx-change fx-change color-coding\" style=\"text-align: right\">" + formatNumber(tempfxchange.toFixed(0)) + "</td><td  class=\"" + temp_class + "-interest-earned interest-earned color-coding\" style=\"text-align: right\">" + formatNumber(tempinterestearned.toFixed(0)) + "</td><td  class=\"" + temp_class + "-total-income total-income color-coding\" style=\"text-align: right\">" + formatNumber(temptotalincome.toFixed(0)) + "</td><td class=\"" + temp_class + "-percentage-attr percentage-attr\"  style=\"text-align: right\">" + temppercentageattr.toFixed(1) + "%</td><td class=\"" + temp_class + "-percentage-gl percentage-gl\"  style=\"text-align: right\">" + temppercentagegl.toFixed(1) + "%</td><td class=\"isin\" style=\"text-align: center\">" + tempisin + "</td></tr>"
+                }
+                $("#income-attribution-report").append(temp_tbody_container + temp_tbody_content + "</tbody>")/**/
+                var temp_footer = "<tbody class=\"footer-row\" id=\"" + temp_class + "-footer-row\" style=\"display:none\"><tr ><td><h4>" + temp_Category + " Total</h4></td><td></td><td></td><td></td><td></td><td></td><td class=\"" + temp_class + "-price-change-subtotal\" id=" + temp_class + "-price-change-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-fx-change-subtotal\" id=\"" + temp_class + "-fx-change-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-interest-earned-subtotal\" id=\"" + temp_class + "-interest-earned-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-total-income-subtotal\" id=\"" + temp_class + "-total-income-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-percentage-attr-subtotal\" id=\"" + temp_class + "-percentage-attr-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td class=\"" + temp_class + "-percentage-gl-subtotal\" id=\"" + temp_class + "-percentage-gl-subtotal\"  style=\"text-align: right; padding: 0 10px\">#N/A</td><td></td></tr></tbody>"
+                $("#income-attribution-report").append(temp_footer)
+                var sum_temp_pricechange = 0, sum_temp_interestearned = 0, sum_temp_fxchange = 0, sum_temp_price_fx_interact = 0, sum_temp_totalincome = 0,sum_temp_percentageattr=0,sum_temp_percentagegl=0;
+                $("." + temp_class + "-price-change").each(function () {
+                    temp_value = unformatNumber($(this).text())
+                    if (!isNaN(temp_value) && temp_value.length != 0) {
+                        sum_temp_pricechange += parseFloat(temp_value);
+                    }
+                });
+				
+				$("." + temp_class + "-fx-change").each(function () {
+                    temp_value = unformatNumber($(this).text())
+                    if (!isNaN(temp_value) && temp_value.length != 0) {
+                        sum_temp_fxchange += parseFloat(temp_value);
+                    }
+                });
+
+                $("." + temp_class + "-interest-earned").each(function () {
+                    temp_value = unformatNumber($(this).text())
+                    if (!isNaN(temp_value) && temp_value.length != 0) {
+                        sum_temp_interestearned += parseFloat(temp_value);
+                    }
+                });
+
+
+                $("." + temp_class + "-total-income").each(function () {
+                    temp_value = unformatNumber($(this).text())
+                    if (!isNaN(temp_value) && temp_value.length != 0) {
+                        sum_temp_totalincome += parseFloat(temp_value);
+                    }
+                });
+                
+                $("." + temp_class + "-percentage-attr").each(function () {
+                    temp_value = unformatNumber($(this).text())
+                    if (!isNaN(temp_value) && temp_value.length != 0) {
+                        sum_temp_percentageattr += parseFloat(temp_value);
+                    }
+                });
+                
+                $("." + temp_class + "-percentage-gl").each(function () {
+                    temp_value = unformatNumber($(this).text())
+                    if (!isNaN(temp_value) && temp_value.length != 0) {
+                        sum_temp_percentagegl += parseFloat(temp_value);
+                    }
+                });
+
+                $('.' + temp_class + '-price-change-subtotal').text(formatNumber(sum_temp_pricechange.toFixed(0)));
+                $('.' + temp_class + '-interest-earned-subtotal').text(formatNumber(sum_temp_interestearned.toFixed(0)));
+                $('.' + temp_class + '-fx-change-subtotal').text(formatNumber(sum_temp_fxchange.toFixed(0)));
+                $('.' + temp_class + '-total-income-subtotal').text(formatNumber(sum_temp_totalincome.toFixed(0)));
+                
+                
+                $('.' + temp_class + '-percentage-attr-subtotal').text(formatNumber(sum_temp_percentageattr.toFixed(1))+' %');
+                $('.' + temp_class + '-percentage-gl-subtotal').text(formatNumber(sum_temp_percentagegl.toFixed(1))+' %');
+
+                
+                sum_account_pxchange += sum_temp_pricechange
+				sum_account_fxchange += sum_temp_fxchange;
+				sum_account_interestearned += sum_temp_interestearned
+				sum_account_totalincome += sum_temp_totalincome
+            }
+            $('#account-pxchange-total').text(formatNumber(sum_account_pxchange.toFixed(0)));
+            $('#account-fxchange-total').text(formatNumber(sum_account_fxchange.toFixed(0)));
+            $('#account-interest-earned-total').text(formatNumber(sum_account_interestearned.toFixed(0)));
+            $('#account-total-income-total').text(formatNumber(sum_account_totalincome.toFixed(0)));
+
+
+            $(".collapse-anchor").click(function () {
+                var temp_cate = $('#' + this.id).attr("data-groupid")
+                $("#" + temp_cate + "-collapse-header").css("display", "none");
+                $("#" + temp_cate + "-expand-header").css("display", "table-row");
+                $("#" + temp_cate + "-income-attribution-full-details").css("display", "table-row-group");
+                $("#" + temp_cate + "-footer-row").css("display", "table-row-group");
+                delete temp_cate
+
+            });
+            $(".expand-anchor").click(function () {
+                var temp_cate = $('#' + this.id).attr("data-groupid")
+                $("#" + temp_cate + "-collapse-header").css("display", "table-row");
+                $("#" + temp_cate + "-expand-header").css("display", "none");
+                $("#" + temp_cate + "-income-attribution-full-details").css("display", "none");
+                $("#" + temp_cate + "-footer-row").css("display", "none");
+                delete temp_cate
+            });
+            $("#table-control").click(function(){
+		        if($("#table-control").prop('value')=="EXPAND"){
+		            $("#table-control").prop('value','COLLAPSE')
+		            $("#table-control").prop('src','../static/up.png')
+		            $(".collapse-header").css("display", "none");
+		            $(".expand-header").css("display", "table-row");
+		            $(".income-attribution-list").css("display", "table-row-group");
+		            $(".footer-row").css("display", "table-row-group");
+		        }else{                   
+		            $("#table-control").prop('value','EXPAND')
+		            $("#table-control").prop('src','../static/down.png')
+		            $(".collapse-header").css("display", "table-row");
+		            $(".expand-header").css("display", "none");
+		            $(".income-attribution-list").css("display", "none");
+		            $(".footer-row").css("display", "none");
+		        }
+		    })
+            
+            $(".color-coding").each(function(){
+            	var temp = unformatNumber($(this).text())
+            	$(this).removeClass('positive-color-coding')
+            	$(this).removeClass('negative-color-coding')
+            	if(temp>0){
+            		$(this).addClass('positive-color-coding')
+            	}else{
+            		if(temp<0){
+            			$(this).addClass('negative-color-coding')
+            		}
+            	}
+            })
+            
+        };
+
+    </script>
+
+{% endblock %}
