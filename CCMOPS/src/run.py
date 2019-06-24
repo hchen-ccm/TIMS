@@ -351,7 +351,7 @@ def test():
         elif op['Currency'] == 'ARS':
             totalExpo += op['MarketValue']
             tempArsDict['details'].append(op)
-        elif op['Currency'] == 'USD' and op['Category'] == 'FUT' and op['Issuer'].find('EC'):
+        elif op['Currency'] == 'USD' and op['Category'] == 'FUT' and 'EC' in op['Issuer']:
             op['MarketValue'] = int(op['Quantity'] * op['Price'])
             totalExpo += op['MarketValue']
             tempEurDict['details'].append(op)
