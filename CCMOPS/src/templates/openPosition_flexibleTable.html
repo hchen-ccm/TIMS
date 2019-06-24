@@ -1328,15 +1328,13 @@
             	$("#open-trans-popup").fadeOut(100)
             	$("#open-trans-info tbody tr").remove()
         	})
+        	/*
         	var namespace = '/realTime';
         	var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
-        	console.log(location.protocol);
-        	console.log(document.domain);
-        	console.log(location.port);
-        	console.log(namespace);
 	        socket.on('server_response', function(res) {
 		        update_ScrollBar(res.scrollPrice)
 	        });
+	        */
         }
         function update_ScrollBar(res){
         	$('.scoll-text-item').remove()

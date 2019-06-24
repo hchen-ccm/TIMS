@@ -21,7 +21,7 @@ from django.contrib.admin.templatetags.admin_list import ResultList
 import numpy as np
 from datetime import timedelta
 import operator
-from iexfinance.stocks import Stock
+#from iexfinance.stocks import Stock
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -351,7 +351,7 @@ def test():
         elif op['Currency'] == 'ARS':
             totalExpo += op['MarketValue']
             tempArsDict['details'].append(op)
-        elif op['Currency'] == 'USD' and op['Category'] == 'FUT':
+        elif op['Currency'] == 'USD' and op['Category'] == 'FUT' and op['Issuer'].find('EC'):
             op['MarketValue'] = int(op['Quantity'] * op['Price'])
             totalExpo += op['MarketValue']
             tempEurDict['details'].append(op)
