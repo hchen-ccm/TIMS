@@ -825,13 +825,20 @@
             })
             updateColorCoding();
             
+            
+            var ExceptionDict={'GRS359353000':'EYDAP.AT','US3135867378':'FNMAT','US3135867527':'FNMAS','GRS145003000':'GEKTERNA.AT','GRS245213004':'LAMDA.AT','GRS427003009':'OLTH.AT','US6708515001':'OIBR-C'}
             $(".type").each(function(){
             	var temp = $(this).text()
             	if(temp == "EQTY"){
             		var tempelement = $(this).siblings('.issuer')
             		var tempissuer = $(this).siblings('.issuer').text()
             		var tempisin = $(this).siblings('.isin').text()
-            		var url = eval("urldict."+tempisin)
+            		if(tempisin in ExceptionDict){
+            			var url = 'https://finance.yahoo.com/quote/'+ExceptionDict.tempisin+'?p='+ExceptionDict.tempisin
+            			var url = eval("urldict."+tempisin)
+            		}else{
+            			var url = 'https://finance.yahoo.com/quote/'+tempissuer+'?p='+tempissuer
+            		}
             		tempelement.html("<a style=\"text-decoration:none; cursor:pointer;\" target=\"_blank\" href=\""+url+"\">"+tempissuer+"</a>")
             	}
             })

@@ -21,7 +21,7 @@ from django.contrib.admin.templatetags.admin_list import ResultList
 import numpy as np
 from datetime import timedelta
 import operator
-#from iexfinance.stocks import Stock
+from iexfinance.stocks import Stock
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -988,11 +988,9 @@ def getPrice():
                         tickerList.append(replaceDict[x['Issuer']])
                     else:
                         tickerList.append(x['Issuer'])
-    tickerList=['ALRN']
     priceDict = {'tickers':tickerList}
     for ticker in tickerList:
-        #priceList.append(iexFinanceAPIStockPriceStreaming(ticker))
-        priceList.append(0.8226)
+        priceList.append(iexFinanceAPIStockPriceStreaming(ticker))
     priceDict ['prices']=priceList
    
     print('priceDict finished')
