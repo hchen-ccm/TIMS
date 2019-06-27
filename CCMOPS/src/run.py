@@ -14,7 +14,7 @@ from threading import Lock
 from flask_socketio import SocketIO  
 from bs4 import BeautifulSoup
 from collections import Counter  
-from lxml import etree
+from lxml import etree 
 import os, logging, csv, datetime, calendar, json, time, requests, eventlet, collections
 from django.contrib.admin.templatetags.admin_list import ResultList
 # new package import by jiahao_Ren
@@ -876,7 +876,7 @@ def background_thread():
 @app.route('/updateRealtimeEquityPrices', methods=['GET', 'POST'])
 def updateRealtimeEquityPrices():
     start_time = time.time()
-    exceptionList = ['FNMA Pfd','GKTRF','OLTH','LAMDA','SRV']
+    exceptionList = ['GKTRF','OLTH','LAMDA','SRV']
     replaceDict={'OIBR/C':'OIBR.C','place_holder':'placeHolder'}
     tickerList=[]
     priceList=[]

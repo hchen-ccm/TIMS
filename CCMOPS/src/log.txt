@@ -212,3 +212,10 @@ Traceback (most recent call last):
   File "C:\Users\aalbe\Desktop\CCMOPS\src\service\serviceImpl.py", line 24, in fxRate
     with open(file, 'r') as fxrate:
 IOError: [Errno 2] No such file or directory: 'C:\\TIMS_InputFile\\FxRate\\CCMFxRate.csv'
+2019-06-24 08:13:22,786 - __main__ - ERROR - FX rate file does not exist!
+Traceback (most recent call last):
+  File "C:\Users\Administrator\git\TIMS\CCMOPS\src\run.py", line 91, in main
+    g.service.fxRate()
+  File "C:\Users\Administrator\git\TIMS\CCMOPS\src\service\serviceImpl.py", line 27, in fxRate
+    with open(file, 'r') as fxrate:
+IOError: [Errno 2] No such file or directory: 'C:\\TIMS_InputFile\\FxRate\\CCMFxRate.csv'

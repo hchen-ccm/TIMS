@@ -3545,7 +3545,10 @@ class Service:
     #                 for bonds hold less than a month, ignore
                     if len(pricelist) < 21: continue
                     for i in range(len(pricelist)-1):
-                        returnlist.append((pricelist[i+1]/pricelist[i])-1)
+                        try:
+                            returnlist.append((pricelist[i+1]/pricelist[i])-1)
+                        except:
+                            pring(ISIN)
                     out[securityName] = np.std(returnlist)*np.sqrt(252)
                     bondWeight[securityName] = weight
     #                 print(out)
