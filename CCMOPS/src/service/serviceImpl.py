@@ -139,6 +139,8 @@ class Service:
                     print(tempTrade.securityName)
                 tempFund.securityNo = tempsecurity2.securityNo
                 fundresultlist = g.dataBase.qFundByCriteria(tempTrade.fundName, tempFund.securityNo)
+                
+                # the len(fundresultlist) == 0 meaning this is a new repo, will insert
                 if len(fundresultlist) == 0:
                     tempFund.quantity = float(tempTrade.quantity)
                     if tempTrade.side == "B":
@@ -146,6 +148,9 @@ class Service:
                     else:
                         tempFund.position = "S"
                     g.dataBase.iFund(tempFund)
+                # 07/1/2019 note originally there is no 'else' statement, which dose not update fund when the closing leg for repo trade entered.
+                # the len(fundresultlist) != 0 means this repo was initiate before.
+                else:
                     tempFund.quantity = 0
                     tempFund.position = "C"
                     g.dataBase.uFundByCriteria(tempFund)
@@ -568,7 +573,7 @@ class Service:
         return cash, currencies
     
     ''' calculate cost basis and generate costBasisPopup '''
-#HELLO ??? WAHT IS COST BASIS AND COSTBASISPOPUP     
+    
     def calCostBasis(self, openPosition, fundName, tranType):
         i = 0
         j = 0
@@ -933,8 +938,7 @@ class Service:
                 summary.cash += int(i['Quantity'])
                 summary.costBasis += int(i['Quantity'])
         summary.accountValue = summary.marketValue + summary.cash
-    
-#HELLO    positionDetailTempList is not used
+
     def openPositionCalculate(self, i, positionDetailTempList, account, summary, cashFlowList, monthlyCashFlowList):
         self.calCashFlow(i, account, cashFlowList, monthlyCashFlowList)
         if i.currency != 'USD':
@@ -1182,7 +1186,6 @@ class Service:
     
     ''' main entrance to calculate open positions '''
     def positionListAdd(self, positionList, countryList, summary, account, group, cashFlowList, monthlyCashFlowList):
-#HELLO    the line below is useless 
         op = db.openPosition.OpenPosition()
         if group == "all":
             positionDetailTempList = list()
@@ -1447,7 +1450,6 @@ class Service:
     def calRealizedGL(self):
         tempLongTermGL = 0
         tempShortTermGL = 0
-#HELLO ???? WHY TRADE CLOSE HAS TWO MAT DATE AND TWO SETTLEMENT DATE         
         tempCloseTradeList = g.dataBase.qTradeClose()
         for i in tempCloseTradeList:
             tradeDate1 = datetime.datetime.strptime(str(i.tradeDate1),'%Y-%m-%d')
@@ -3525,7 +3527,7 @@ class Service:
                 for j in range(len(data)):   
                     BondPortfolioDuration += float(eachBondValue[j]) * float(eachBondDuration[j])
                 analyticData[i] = BondPortfolioDuration
-                
+ 
             if i == 'Bond Position annualized Volatility (1 month data)':    
                 out = {}
                 bondWeight = {}
@@ -3548,7 +3550,8 @@ class Service:
                         try:
                             returnlist.append((pricelist[i+1]/pricelist[i])-1)
                         except:
-                            pring(ISIN)
+                            print(ISIN)
+                            print(pricelist)
                     out[securityName] = np.std(returnlist)*np.sqrt(252)
                     bondWeight[securityName] = weight
     #                 print(out)
@@ -3561,13 +3564,9 @@ class Service:
                     templist.append(bondWeight[j][0])
                     templist.append(out[bondWeight[j][0]])
                     data.append(templist)
-        return analyticData
-        
- 
-     
 
-    
-    
+        return analyticData
+         
     ''' computation of portfolio carry'''
     def portforlioCarryComputation(self,positionList):
         totalCarry = 0
