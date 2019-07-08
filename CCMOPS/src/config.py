@@ -235,7 +235,13 @@ YAHOO_FINANCE_EQUITY = {'US00653A1079' : 'https://finance.yahoo.com/quote/ADAP?p
                     'US6311031081' : 'https://finance.yahoo.com/quote/NDAQ?p=NDAQ',
                     'US92913A1007' : 'https://finance.yahoo.com/quote/PPR?p=PPR',
                     'US7475251036' : 'https://finance.yahoo.com/quote/QCOM?p=QCOM',
-                    'US9286626000' : 'https://finance.yahoo.com/quote/VWAGY?p=VWAGY'}
+                    'US9286626000' : 'https://finance.yahoo.com/quote/VWAGY?p=VWAGY',
+                    'US0382221051' : 'https://finance.yahoo.com/quote/AMAT?p=AMAT',
+                    'US25271C1027' : 'https://finance.yahoo.com/quote/DO?p=DO',
+                    'US02079K3059' : 'https://finance.yahoo.com/quote/GOOGL?p=GOOGL',
+                    'US88579Y1010' : 'https://finance.yahoo.com/quote/MMM?p=MMM',
+                    'US5949181045' : 'https://finance.yahoo.com/quote/MSFT?p=MSFT'   
+                    }
 
 REAL_TIME_EQUITY = {'US00653A1079' : 'https://finance.yahoo.com/quote/ADAP/history?p=ADAP', 
                     'GRS015003007' : 'https://finance.yahoo.com/quote/ALBKF/history?p=ALBKF', 
@@ -275,7 +281,8 @@ REAL_TIME_EQUITY = {'US00653A1079' : 'https://finance.yahoo.com/quote/ADAP/histo
                     'US92839U2069' : 'https://finance.yahoo.com/quote/VC/history?p=VC'}
 
 REAL_TIME_FX = {'EUR':'https://finance.yahoo.com/quote/EURUSD=X',
-                'ARS':'https://finance.yahoo.com/quote/ARSUSD=X'}
+                'ARS':'https://finance.yahoo.com/quote/ARSUSD=X',
+                'AUD':'https://finance.yahoo.com/quote/AUDUSD=X'}
 
 SCROLLING_TEXT = {'S&P 500':'https://finance.yahoo.com/quote/%5EGSPC/history?p=%5EGSPC',
                   'Dow 30':'https://finance.yahoo.com/quote/%5EDJI/history?p=%5EDJI',

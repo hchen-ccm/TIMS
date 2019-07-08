@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import Flask, render_template, flash, redirect, g, abort, session, url_for, request
+from flask import Flask, render_template, flash, redirect, g, abort, session, url_for, request,jsonify
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -14,13 +14,14 @@ from threading import Lock
 from flask_socketio import SocketIO  
 from bs4 import BeautifulSoup
 from collections import Counter  
-from lxml import etree
+from lxml import etree 
 import os, logging, csv, datetime, calendar, json, time, requests, eventlet, collections
 from django.contrib.admin.templatetags.admin_list import ResultList
 # new package import by jiahao_Ren
 import numpy as np
 from datetime import timedelta
 import operator
+from iexfinance.stocks import Stock
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -350,7 +351,7 @@ def test():
         elif op['Currency'] == 'ARS':
             totalExpo += op['MarketValue']
             tempArsDict['details'].append(op)
-        elif op['Currency'] == 'USD' and op['Category'] == 'FUT':
+        elif op['Currency'] == 'USD' and op['Category'] == 'FUT' and 'EC' in op['Issuer']:
             op['MarketValue'] = int(op['Quantity'] * op['Price'])
             totalExpo += op['MarketValue']
             tempEurDict['details'].append(op)
@@ -548,15 +549,6 @@ def incomeAttribution():
 @app.route('/transView', methods=['GET', 'POST'])
 #@login_required
 def transView():
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     form = FlaskForm()
     account = request.args.get('account')
@@ -862,12 +854,64 @@ def not_found(e):
 def not_found(e):
     return render_template("401.html", msg = "File does not exist!")
 
-def background_thread(): 
-    while True:
+def background_thread():
+    count=0 
+    while count>=0:
+        start_time = time.time()
         priceDict, fxDict, realTimeDtdPriceDict, realTimeMtdPriceDict, scrollDict = getPrice()
         socketio.emit('server_response',{'price':priceDict,'fx':fxDict,'dtdPrice':realTimeDtdPriceDict,\
                                          'mtdPrice':realTimeMtdPriceDict,'scrollPrice':scrollDict}, namespace = '/realTime')
-        socketio.sleep(300)
+        
+        print('process ',count)
+        print("--- %s seconds ---" % (time.time() - start_time))
+        if count <20:
+            socketio.sleep(10)
+        elif count <50:
+            socketio.sleep(300)
+        else:
+            socketio.sleep(3600)
+        count+=1
+        print("--- %s seconds including sleep ---" % (time.time() - start_time))
+
+@app.route('/updateRealtimeEquityPrices', methods=['GET', 'POST'])
+def updateRealtimeEquityPrices():
+    start_time = time.time()
+    exceptionList = ['GKTRF','OLTH','LAMDA','SRV']
+    replaceDict={'OIBR/C':'OIBR.C','place_holder':'placeHolder'}
+    tickerList=[]
+    priceList=[]
+    resultDict={}
+    positionList = eval(client.get('positionListCategory'))
+    for dict in positionList:
+        if dict['class']=='EQTY':
+            for x in dict['details']:
+                if x['Issuer'] not in exceptionList:
+                    if x['Issuer'] in replaceDict.keys():
+                        tickerList.append(replaceDict[x['Issuer']])
+                    else:
+                        tickerList.append(x['Issuer'])
+    resultDict = {'tickers':tickerList}
+    for ticker in tickerList:
+        priceList.append(iexFinanceAPIStockPrice(ticker))
+    resultDict ['prices']=priceList
+    print("--- %s seconds to complete priceupdate ---" % (time.time() - start_time))
+    return jsonify(resultDict)
+
+def iexFinanceAPIStockPrice(ticker):
+    try:
+        stock = Stock(ticker, token="sk_d6410f49068d422fb3ffb8d25e14c7fc")
+    except:
+        stock = Stock(ticker, token="sk_aac489a80f854745b00a5432be3eb16d")
+        
+    return stock.get_price()
+
+def iexFinanceAPIStockPriceStreaming(ticker):
+    try:
+        stock = Stock(ticker, token="sk_e1117a5e81cb4445a66d82623d65c30c")
+        return stock.get_price()
+    except:
+        return 0
+    
 
 @app.route('/op2')
 #@login_required
@@ -921,6 +965,7 @@ def getPrice():
     scrollDict = {}
     realTimeDtdPriceDict = {}
     realTimeMtdPriceDict = {}
+    '''
     for ISIN, url in realTimeDict.items():
         soup = BeautifulSoup(requests.get(url).text, "lxml")
         trs = soup.find_all('tr')
@@ -929,6 +974,26 @@ def getPrice():
             priceDict[ISIN] = round(price, 2)
         except:
             pass
+    '''
+    exceptionList = ['FNMA Pfd','GKTRF','OLTH','LAMDA','SRV']
+    replaceDict={'OIBR/C':'OIBR.C','place_holder':'placeHolder'}
+    tickerList=[]
+    priceList=[]
+    positionList = eval(client.get('positionListCategory'))
+    for dict in positionList:
+        if dict['class']=='EQTY':
+            for x in dict['details']:
+                if x['Issuer'] not in exceptionList:
+                    if x['Issuer'] in replaceDict.keys():
+                        tickerList.append(replaceDict[x['Issuer']])
+                    else:
+                        tickerList.append(x['Issuer'])
+    priceDict = {'tickers':tickerList}
+    for ticker in tickerList:
+        priceList.append(iexFinanceAPIStockPriceStreaming(ticker))
+    priceDict ['prices']=priceList
+   
+    print('priceDict finished')
 
     fxUrlDict = app.config['REAL_TIME_FX']
     for curr, url in fxUrlDict.items():
@@ -943,7 +1008,9 @@ def getPrice():
         except:
             pass
     fxDict['USD'] = 1
-     
+    
+    print('fxDict finished')
+    '''
     with app.app_context():
         tempDB = g.dataBase = db.DbConn()
         isinListForEquity = tempDB.qISINFromSecurityForEquity()
@@ -957,7 +1024,7 @@ def getPrice():
                 realTimeMtdPriceDict[str(ISIN)] = float(tempDB.qPriceHistoryMonthEnd(ISIN)[0].price)
             except:
                 realTimeMtdPriceDict[str(ISIN)] = currPrice
-    
+    '''
     scrollingTextDict = app.config['SCROLLING_TEXT']
     threads = []
     headers = {
@@ -1001,6 +1068,8 @@ def getPrice():
             scrollDict[index].append(format(round(currValue + moveValue, 4), ','))
         except:
             pass
+    
+    print('scrollDict finished')
     
     return priceDict, fxDict, realTimeDtdPriceDict, realTimeMtdPriceDict, scrollDict
 
