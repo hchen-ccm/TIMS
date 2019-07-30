@@ -960,10 +960,15 @@ class Service:
             if i.yesPrice != 0:
                 i.dtdPx = round((i.currPrice - i.yesPrice) / i.yesPrice * 100, 2)
             try:
-                priceLastMonth = g.dataBase.qPriceHistoryByPriceDate(i.ISIN, priceDate)[0].price
-                i.mtdPx = round((i.currPrice - float(priceLastMonth)) / float(priceLastMonth) * 100, 2)
+#                 priceLastMonth = g.dataBase.qPriceHistoryByPriceDate(i.ISIN, priceDate)[0].price
+#                 i.mtdPx = round((i.currPrice - float(priceLastMonth)) / float(priceLastMonth) * 100, 2)
+                i.mtdPX, i.mtdPXnom = g.dataBase.qCalPX(i, 1)
+                i.mtdPXnom = i.mtdPXnom*float(rate)
+                i.ytdPX, i.ytdPXnom = g.dataBase.qCalPX(i, 12)
+                i.ytdPXnom = i.ytdPXnom*float(rate)
             except Exception:
                 i.mtdPx = 0
+                i.ytdPX = 0
             if i.securityType == "EURO":
                 i.ai = int(float(tempList[0].ai) * float(i.quantity) * float(tempList[0].factor) / 100)
             if i.securityType == "CDS":
@@ -1016,6 +1021,10 @@ class Service:
             try:
                 priceLastMonth = g.dataBase.qPriceHistoryByPriceDate(i.ISIN, priceDate)[0].price
                 i.mtdPx = round((i.currPrice - float(priceLastMonth)) / float(priceLastMonth) * 100, 2)
+                i.mtdPX, i.mtdPXnom = g.dataBase.qCalPX(i, 1)
+                i.mtdPXnom = i.mtdPXnom*float(rate)
+                i.ytdPX, i.ytdPXnom = g.dataBase.qCalPX(i, 12)
+                i.ytdPXnom = i.ytdPXnom*float(rate)
             except Exception:
                 i.mtdPx = 0
             try:    
@@ -1054,6 +1063,10 @@ class Service:
             try:
                 priceLastMonth = g.dataBase.qPriceHistoryByPriceDate(i.ISIN, priceDate)[0].price
                 i.mtdPx = round((i.currPrice - float(priceLastMonth)) / float(priceLastMonth) * 100, 2)
+                i.mtdPX, i.mtdPXnom = g.dataBase.qCalPX(i, 1)
+                i.mtdPXnom = i.mtdPXnom*float(rate)
+                i.ytdPX, i.ytdPXnom = g.dataBase.qCalPX(i, 12)
+                i.ytdPXnom = i.ytdPXnom*float(rate)
             except Exception:
                 i.mtdPx = 0
             self.calCostBasis(i, account, "FUT")

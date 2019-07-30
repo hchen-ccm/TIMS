@@ -2,6 +2,7 @@ import pymssql, pyodbc, datetime
 from model import trade,security,fund,currency,counterparty,config,frontQuery,tradeBlotter, \
     report,priceHistory,openPosition,frontSummary,tradeClose,realizedGL,accountHistory, \
     investHistory, frontInvestPNL, riskManagement, message, incomeAttribution
+from dateutil.relativedelta import relativedelta
 
 class DbConn:
     def __init__(self):
@@ -3068,6 +3069,58 @@ class DbConn:
             listResult.append(result)
         return listResult
     
+    
+    def qCalPX(self, openPosition, timePeriod):
+        now = datetime.date.today()
+        
+        if isinstance(timePeriod, int):
+            before = now + relativedelta(months= -timePeriod)
+        else:
+            before = now + relativedelta(days= -timePeriod)
+        
+        if before.weekday() >= 5: before = before + relativedelta(days = 4 - before.weekday())
+        
+        
+        netPosition = 0
+        sql = "select side, reserve1 from TRADE where ISIN = '%s' and tradeDate <= ? " % openPosition.ISIN
+        self.__cur.execute(sql, before)
+        #        since before the position direction is not that important
+        for i in self.__cur.fetchall():
+            if i[0] == 'S':
+                netPosition -= float(i[1])
+            else:
+                netPosition += float(i[1])
+        try:
+            beforePrice = float(self.qPriceHistoryAtPriceDate(openPosition.ISIN, before)[0].price)
+        except:
+            beforePrice = 0
+        beforeCost = abs(netPosition * beforePrice) 
+        beforePL = (float(openPosition.currPrice) - beforePrice) * netPosition
+        sql2 = "select price, side, reserve1 from TRADE where ISIN = '%s' and  ? <= tradeDate  and tradeDate < ? order by tradeDate" % openPosition.ISIN
+        afterCost = 0
+        afterPL = 0
+        self.__cur.execute(sql2, before, now)
+        for i in self.__cur.fetchall():
+            afterCost += abs(float(i[0]) * float(i[2]))
+            if i[1] == 'B':
+                afterPL += float(i[2]) * (float(openPosition.currPrice) - float(i[0]))
+            else:
+                afterPL += -float(i[2]) * (float(openPosition.currPrice) - float(i[0]))
+        totalPL = afterPL + beforePL
+        totalCost = beforeCost + afterCost
+#         print(openPosition.ISIN, beforeCost,  afterCost, netPosition, beforePrice, before)
+        if totalCost == 0: return 0, beforePL + afterCost
+        else: return (afterPL + beforePL) / (beforeCost + afterCost), beforePL + afterPL
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
     def qMessage(self):
         listResult = list()
         sql = "select top 1 * from message order by lastUptdt desc"
@@ -3377,3 +3430,11 @@ class DbConn:
         except Exception, e:
             self.__con.rollback()
             print(e)
+            
+            
+# a = openPosition
+# a.currPrice = 3.79
+# a.ISIN  = 'US00653A1079'
+# b = DbConn()
+# 
+# print(b.qCalPX(a, 2))
