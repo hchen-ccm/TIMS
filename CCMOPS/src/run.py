@@ -22,7 +22,7 @@ import numpy as np
 from datetime import timedelta
 import operator
 from iexfinance.stocks import Stock
-
+# a sinple try
 app = Flask(__name__)
 app.config.from_object('config')
 
